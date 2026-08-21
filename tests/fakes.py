@@ -61,10 +61,46 @@ class FakeComponent:
 
 
 class FakeParameter:
-    def __init__(self, name, expression, unit="mm"):
+    def __init__(self, name, expression, unit="mm", value=0.0, comment=""):
         self.name = name
         self.expression = expression
         self.unit = unit
+        self.value = value
+        self.comment = comment
+        self.deleted = False
+
+    def deleteMe(self):
+        self.deleted = True
+        return True
+
+
+class FakeUserParameters(FakeCollection):
+    @property
+    def count(self):
+        return len([item for item in self._items if not item.deleted])
+
+    def item(self, index):
+        return [item for item in self._items if not item.deleted][index]
+
+    def __iter__(self):
+        return iter([item for item in self._items if not item.deleted])
+
+    def itemByName(self, name):
+        return next(
+            (item for item in self._items if item.name == name and not item.deleted),
+            None,
+        )
+
+    def add(self, name, value_input, unit, comment):
+        parameter = FakeParameter(
+            name,
+            value_input,
+            unit,
+            value=0.0,
+            comment=comment,
+        )
+        self._items.append(parameter)
+        return parameter
 
 
 class FakeTimeline:
@@ -77,9 +113,12 @@ class FakeUnitsManager:
     defaultLengthUnits = "mm"
 
     def evaluateExpression(self, expression, unit):
-        number = float(expression.split()[0])
-        source = expression.split()[1] if len(expression.split()) > 1 else unit
+        parts = expression.split()
+        number = float(parts[0])
+        source = parts[1] if len(parts) > 1 else unit
         factors_to_cm = {"mm": 0.1, "cm": 1.0, "in": 2.54}
+        if source not in factors_to_cm or unit not in factors_to_cm:
+            raise ValueError("unsupported or incompatible unit")
         return number * factors_to_cm[source]
 
 
@@ -96,7 +135,7 @@ class FakeDesign:
         self.rootComponent = components[0] if components else FakeComponent("Root", "root")
         self.activeComponent = self.rootComponent
         self.allComponents = FakeCollection(components or [self.rootComponent])
-        self.userParameters = FakeCollection(parameters)
+        self.userParameters = FakeUserParameters(parameters)
         self.timeline = FakeTimeline(marker_position=2, count=2)
         self.unitsManager = FakeUnitsManager()
         self.designType = "ParametricDesignType"
