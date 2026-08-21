@@ -3,6 +3,7 @@ import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.server import mcp_server
 
 

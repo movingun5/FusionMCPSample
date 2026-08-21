@@ -1,5 +1,6 @@
 import unittest
 
+import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.server.auth import verify_authorization
 
 

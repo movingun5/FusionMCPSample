@@ -1,6 +1,7 @@
 import hashlib
 import unittest
 
+import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from core.policy import classify_code
 
 

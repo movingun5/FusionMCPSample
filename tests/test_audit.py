@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from core.audit import AuditLogger, redact
 
 
