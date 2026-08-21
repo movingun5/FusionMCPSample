@@ -1,0 +1,7 @@
+# Copy or keep this as .codex/config.toml in a trusted Codex project.
+# Store the token only in the FUSION_MCP_TOKEN environment variable.
+[mcp_servers.fusion360]
+url = "http://127.0.0.1:9100/"
+bearer_token_env_var = "FUSION_MCP_TOKEN"
+startup_timeout_sec = 10
+tool_timeout_sec = 60

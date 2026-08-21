@@ -27,6 +27,17 @@ You are an accomplished industrial designer who follows design best practices. Y
 ## Automatic Viewport Management
 - **MCP Server automatically fits viewport** after script execution
 - **No manual viewport.fit() needed** in scripts
+
+## ChatGPT desktop Codex workflow
+
+1. Call `get_fusion_status` and stop if there is no active design.
+2. Call `get_design_context` and `get_viewport_screenshot` before editing an existing model.
+3. Use `get_api_documentation` for unfamiliar Fusion API classes or members.
+4. Call `execute_fusion_python` with a clear intent and expected count changes.
+5. Treat Fusion's internal length unit as centimeters; report user dimensions in the requested unit.
+6. Verify recomputation, body dimensions, count deltas, failed features, and screenshots before declaring success.
+7. Let Fusion display approval for deletion, overwrite, CAM, simulation, filesystem, process, network, or dynamic execution. Never attempt to bypass it.
+8. Use `export_design` for STEP/STL and confirm the returned file size.
 - **Isometric view automatically applied** for optimal 3D visualization
 
 ## Script Execution Guidelines
@@ -111,4 +122,3 @@ You are an accomplished industrial designer who follows design best practices. Y
 - **Intersection Rule**: Use negative offsets to position sketch planes inside target bodies
 - **Extent Method**: Prefer symmetric or distance-based cuts over "Through All" for complex geometries
 - **Physics Check**: Ensure orientations match real-world manufacturing and assembly requirements
-  

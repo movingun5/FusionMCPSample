@@ -1,5 +1,7 @@
 # Fusion MCP Add-in
 
+> This fork targets natural-language modeling from the ChatGPT desktop app's local Codex workspace. It remains an experimental Fusion automation add-in, not a safety-certified CAD/CAM product.
+
 A Fusion add-in that provides HTTP API functionality for Model Context Protocol (MCP) communication. MCP is a standardized protocol that enables AI assistants to interact with external tools and data sources. This add-in enables external applications (like Cursor) to interact with Fusion through a secure HTTP interface.
 
 [See detailed usage instructions here](<Fusion MCP Addin/tips.md>)
@@ -14,9 +16,14 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 
 ### Available Tools
 
-- **execute_api_script**: Execute Python scripts using the Fusion API
-- **get_screenshot**: Capture viewport screenshots with various camera orientations (current, top, bottom, front, back, left, right, isometric views)
+- **get_fusion_status**: Check Fusion, add-in, and active-design availability without exposing secrets
+- **get_design_context**: Read bounded component, body, parameter, and entity-token context
+- **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
+- **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions
+- **undo_last_execution**: Attempt to undo the most recent successful Codex transaction in the same document
+- **export_design**: Export and verify STEP/STL, requiring Fusion approval before overwrite
+- **execute_api_script**, **get_screenshot**: Backward-compatible aliases
 
 > **Note on Tool Descriptions**: In MCP environments, well-crafted tool descriptions are critical for AI assistants to understand when and how to use each tool. This add-in includes detailed descriptions and parameter specifications to help AI assistants effectively interact with Fusion.
 
@@ -56,6 +63,16 @@ The main add-in that implements MCP-compatible HTTP endpoints for Fusion interac
 ## Installation & More
 
 [Installation instructions, troubleshooting, and more are found here](<Fusion MCP Addin/README.md>)
+
+The repository includes a project-local [`.codex/config.toml`](.codex/config.toml) and a secret-free diagnostic:
+
+```powershell
+python scripts/check_install.py --addon-path "Fusion MCP Addin"
+```
+
+Set `FUSION_MCP_TOKEN` at user scope, then fully restart both Fusion and ChatGPT so both processes inherit the same value. The MCP server binds only to `127.0.0.1:9100`.
+
+CAD files and the add-in remain local. Prompts, MCP results, error summaries, and screenshots supplied to Codex may be sent to OpenAI's model service.
 
 ## License
 Samples are licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](LICENSE) file for full details.

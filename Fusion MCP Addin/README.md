@@ -1,5 +1,18 @@
 ## Installation
 
+### 1. Configure a shared local token
+
+Generate a long random token and store it as the user environment variable `FUSION_MCP_TOKEN`. Do not put the value in Git or TOML. On Windows PowerShell, set it once and then restart Fusion and ChatGPT:
+
+```powershell
+$tokenBytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($tokenBytes)
+$fusionToken = [Convert]::ToBase64String($tokenBytes)
+[Environment]::SetEnvironmentVariable('FUSION_MCP_TOKEN', $fusionToken, 'User')
+```
+
+The shell variable is only used to set the user environment value. Do not print or paste the token into chat.
+
 1. Copy the `Fusion MCP Addin` folder to your Fusion add-ins directory:
     - Windows: `%APPDATA%\Autodesk\Autodesk Fusion\API\AddIns\`
     - macOS: `~/Library/Application Support/Autodesk/Autodesk Fusion/API/AddIns/`
@@ -8,9 +21,21 @@
 
 3. Find "Fusion MCP Addin" in the list and click **Run**
 
-4. The add-in will start an HTTP server on `localhost:9100` (port is configurable in the code if needed)
+4. The add-in starts an authenticated HTTP MCP server on `127.0.0.1:9100`. It refuses to start without `FUSION_MCP_TOKEN`.
 
-Or alternatively, work from the cloned repository directly by just adding the `Fusion MCP Addin` folder from the cloned source location in Fusion's **Add-Ins** panel.
+Or work from the cloned repository directly by adding the `Fusion MCP Addin` folder from the cloned source location in Fusion's **Scripts and Add-Ins** panel.
+
+### 3. Connect ChatGPT desktop Codex
+
+Open this repository as the Codex project. Its `.codex/config.toml` points to the local server and reads the token from `FUSION_MCP_TOKEN`. In ChatGPT desktop, open **Settings → MCP servers**, confirm the project server, save, and restart the app. Then start a Codex task in this project.
+
+Run the diagnostic from the repository root:
+
+```powershell
+python scripts/check_install.py --addon-path "Fusion MCP Addin"
+```
+
+The report shows only whether a token exists; it never prints the value.
 
 ## Configuring Cursor
 
@@ -58,7 +83,7 @@ Once the add-in is running, the following MCP tools are available:
 
 ### execute_api_script
 
-Execute Python scripts using the Fusion API. The script runs in the Fusion context with full API access.
+Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
 
 **Parameters:**
 - `script` (string): Python script source code to execute
@@ -101,6 +126,7 @@ Search the Fusion API documentation to find classes, properties, methods, and th
 **Server won't start:**
 
 - Check if port 9100 is already in use
+- Confirm `FUSION_MCP_TOKEN` exists at user scope and restart both Fusion and ChatGPT
 - Verify Fusion has necessary permissions
 - Check the Text Commands window for error messages
 
@@ -108,6 +134,10 @@ Search the Fusion API documentation to find classes, properties, methods, and th
 
 - Check that Fusion API calls are valid for the current context
 - Verify parameters are passed correctly
+
+**Local logs:** execution audit records are written under the operating system temporary directory in `fusion-codex-mcp/audit.jsonl`. Delete that file when its local history is no longer needed. Authorization values are redacted.
+
+**Data boundary:** CAD documents and the HTTP server stay local. Prompts, MCP results, error summaries, and screenshots passed into Codex may be transmitted to OpenAI's model service.
 
 ## License
 
