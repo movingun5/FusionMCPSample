@@ -103,6 +103,25 @@ class FakeSketchDimensions(FakeCollection):
         return dimension
 
 
+class FakeSketchPoints(FakeCollection):
+    def add(self, point):
+        sketch_point = FakeSketchPoint(point)
+        self._items.append(sketch_point)
+        return sketch_point
+
+
+class FakeGeometricConstraints(FakeCollection):
+    def addVerticalPoints(self, point_one, point_two):
+        constraint = ("vertical-points", point_one, point_two)
+        self._items.append(constraint)
+        return constraint
+
+    def addHorizontalPoints(self, point_one, point_two):
+        constraint = ("horizontal-points", point_one, point_two)
+        self._items.append(constraint)
+        return constraint
+
+
 class FakeCreatedSketch(FakeSketch):
     def __init__(self, plane, token):
         super().__init__("Sketch", token)
@@ -110,6 +129,10 @@ class FakeCreatedSketch(FakeSketch):
         self.deleted = False
         self.sketchCurves = FakeSketchCurves(self)
         self.sketchDimensions = FakeSketchDimensions()
+        self.originPoint = FakeSketchPoint(FakePoint(0.0, 0.0, 0.0))
+        self.sketchPoints = FakeSketchPoints()
+        self.geometricConstraints = FakeGeometricConstraints()
+        self.isVisible = True
 
     def deleteMe(self):
         self.deleted = True

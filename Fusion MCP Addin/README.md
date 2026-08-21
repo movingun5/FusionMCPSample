@@ -85,6 +85,10 @@ Once the add-in is running, the following MCP tools are available:
 
 Create a named solid New Body from the largest closed profile in an existing named sketch. The distance is a Fusion expression such as `height` or `25 mm`; a negative value reverses direction. The tool rejects zero distance, missing or empty sketches, and duplicate extrusion names before modifying the design.
 
+### create_simple_hole
+
+Create one named simple hole on the planar +Z top face of a named solid body. The X coordinate, Y coordinate, diameter, and depth are driving Fusion expressions, and the generated placement sketch remains in the timeline so parameter edits can reposition the hole. This first explicit-hole version targets the +Z top face and distance depth; other faces, through-all, countersink, counterbore, and thread options remain future extensions.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
