@@ -1,0 +1,15 @@
+interface:
+  display_name: "Fusion"
+  short_description: "Fusion 360 자연어 모델링·수정·검증 워크플로"
+  default_prompt: "Use $fusion to create or edit the active Fusion 360 model from my natural-language requirements and verify the result."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "fusion360"
+      description: "Local authenticated Fusion 360 MCP add-in"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:9100/"
+
+policy:
+  allow_implicit_invocation: true
