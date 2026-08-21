@@ -2,14 +2,15 @@
 
 - Date: 2026-08-21
 - Automated environment: Windows, Python 3.14, Fusion API replaced by test fakes
-- Live Fusion status: **not run**
-- ChatGPT desktop Codex MCP status: **not run**
+- Live Fusion user-parameter status: **passed on Fusion 2704.1.53**
+- ChatGPT desktop Codex to authenticated local MCP status: **passed**
+- Phase-1 mounting-plate geometry acceptance: **not run**
 
 ## Automated evidence
 
-The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
+The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **51 tests passed**, and `compileall` plus `git diff --check` exited successfully.
+Current result: **68 tests passed**, and `compileall` plus `git diff --check` exited successfully.
 
 Run:
 
@@ -18,6 +19,17 @@ python -m unittest discover -s tests -v
 python -m compileall -q "Fusion MCP Addin" scripts tests
 python scripts/check_install.py --addon-path "Fusion MCP Addin"
 ```
+
+## Live user-parameter evidence
+
+The installed add-in exposed `upsert_user_parameter`, reported server version `1.2.0`, and completed authenticated calls against an unsaved blank design. The live sequence was:
+
+1. Create `codex_test_width = 50 mm` and confirm it through `get_design_context`.
+2. Update it to `60 mm` with `expected_old_expression = "50 mm"` and confirm the new value.
+3. After correcting the Fusion command ID from the display name `Undo` to `UndoCommand`, repeat the update and call `undo_last_execution`.
+4. Confirm through `get_design_context` that Undo restored `codex_test_width = 50 mm`.
+
+The final disposable document remains unsaved with the test parameter at `50 mm`. No bodies, sketches, or features were created by this validation.
 
 ## Required live procedure
 
@@ -36,6 +48,6 @@ python scripts/live_acceptance.py --confirm-blank-design --report docs/live-vali
 
 The generated JSON report strips base64 screenshot data and never includes the bearer token. Do not commit `docs/live-validation-result.json` if it contains personal file paths.
 
-## Current limitation
+## Remaining live scope
 
-The diagnostic found the add-in manifest, but reported `TOKEN_MISSING` and `SERVER_UNAVAILABLE`. Therefore no claim is made that live geometry creation, screenshots, exports, approval dialogs, or reconnect behavior have passed.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, and one-step parameter Undo are verified. No claim is made yet that live geometry creation, screenshots, exports, or approval dialogs have passed; use the mounting-plate procedure above for that separate acceptance scope.
