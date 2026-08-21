@@ -43,6 +43,110 @@ class FakeSketch:
         self.isComputeDeferred = False
 
 
+class FakeSketchPoint:
+    def __init__(self, point):
+        self.geometry = point
+
+
+class FakeSketchLine:
+    def __init__(self, start, end):
+        self.startSketchPoint = FakeSketchPoint(start)
+        self.endSketchPoint = FakeSketchPoint(end)
+
+
+class FakeSketchLines(FakeCollection):
+    def __init__(self, sketch):
+        super().__init__()
+        self.sketch = sketch
+        self.last_center = None
+        self.last_corner = None
+
+    def addCenterPointRectangle(self, center, corner):
+        self.last_center = center
+        self.last_corner = corner
+        opposite_x = (2.0 * center.x) - corner.x
+        opposite_y = (2.0 * center.y) - corner.y
+        lower_left = FakePoint(opposite_x, opposite_y, 0.0)
+        lower_right = FakePoint(corner.x, opposite_y, 0.0)
+        upper_right = FakePoint(corner.x, corner.y, 0.0)
+        upper_left = FakePoint(opposite_x, corner.y, 0.0)
+        self._items = [
+            FakeSketchLine(lower_left, lower_right),
+            FakeSketchLine(lower_right, upper_right),
+            FakeSketchLine(upper_right, upper_left),
+            FakeSketchLine(upper_left, lower_left),
+        ]
+        self.sketch.profiles = FakeCollection([object()])
+        return self
+
+
+class FakeSketchCurves:
+    def __init__(self, sketch):
+        self.sketchLines = FakeSketchLines(sketch)
+
+
+class FakeDimensionParameter:
+    def __init__(self):
+        self.expression = ""
+
+
+class FakeSketchDimension:
+    def __init__(self, orientation):
+        self.orientation = orientation
+        self.parameter = FakeDimensionParameter()
+
+
+class FakeSketchDimensions(FakeCollection):
+    def addDistanceDimension(self, point_one, point_two, orientation, text_point):
+        dimension = FakeSketchDimension(orientation)
+        self._items.append(dimension)
+        return dimension
+
+
+class FakeCreatedSketch(FakeSketch):
+    def __init__(self, plane, token):
+        super().__init__("Sketch", token)
+        self.plane = plane
+        self.deleted = False
+        self.sketchCurves = FakeSketchCurves(self)
+        self.sketchDimensions = FakeSketchDimensions()
+
+    def deleteMe(self):
+        self.deleted = True
+        return True
+
+
+class FakeSketches(FakeCollection):
+    @property
+    def count(self):
+        return len([item for item in self._items if not getattr(item, "deleted", False)])
+
+    def item(self, index):
+        return [
+            item for item in self._items if not getattr(item, "deleted", False)
+        ][index]
+
+    def __iter__(self):
+        return iter([
+            item for item in self._items if not getattr(item, "deleted", False)
+        ])
+
+    def itemByName(self, name):
+        return next(
+            (
+                item
+                for item in self._items
+                if item.name == name and not getattr(item, "deleted", False)
+            ),
+            None,
+        )
+
+    def add(self, plane):
+        sketch = FakeCreatedSketch(plane, f"sketch-{len(self._items) + 1}")
+        self._items.append(sketch)
+        return sketch
+
+
 class FakeFeature:
     def __init__(self, name, token, health="HealthyFeatureHealthState"):
         self.name = name
@@ -56,8 +160,11 @@ class FakeComponent:
         self.name = name
         self.entityToken = token
         self.bRepBodies = FakeCollection(bodies)
-        self.sketches = FakeCollection(sketches)
+        self.sketches = FakeSketches(sketches)
         self.features = FakeCollection(features)
+        self.xYConstructionPlane = object()
+        self.xZConstructionPlane = object()
+        self.yZConstructionPlane = object()
 
 
 class FakeParameter:
