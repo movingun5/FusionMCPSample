@@ -14,7 +14,7 @@ $fusionToken = [Convert]::ToBase64String($tokenBytes)
 The shell variable is only used to set the user environment value. Do not print or paste the token into chat.
 
 1. Copy the `Fusion MCP Addin` folder to your Fusion add-ins directory:
-    - Windows: `%APPDATA%\Autodesk\Autodesk Fusion\API\AddIns\`
+    - Windows: `%APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns\`
     - macOS: `~/Library/Application Support/Autodesk/Autodesk Fusion/API/AddIns/`
 
 2. Start Fusion and go to the **Add-Ins** panel
