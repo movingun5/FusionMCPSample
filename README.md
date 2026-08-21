@@ -18,6 +18,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 
 - **get_fusion_status**: Check Fusion, add-in, and active-design availability without exposing secrets
 - **get_design_context**: Read bounded component, body, parameter, and entity-token context
+- **upsert_user_parameter**: Create or safely update one named user parameter with optional optimistic concurrency checking
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions
