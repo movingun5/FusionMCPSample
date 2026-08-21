@@ -3,6 +3,7 @@
 - Date: 2026-08-21
 - Automated environment: Windows, Python 3.14, Fusion API replaced by test fakes
 - Live Fusion user-parameter status: **passed on Fusion 2704.1.53**
+- Live rectangle-sketch status: **passed on Fusion 2704.1.53**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -10,7 +11,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **68 tests passed**, and `compileall` plus `git diff --check` exited successfully.
+Current result: **76 tests passed**, and `compileall` plus `git diff --check` exited successfully.
 
 Run:
 
@@ -31,6 +32,15 @@ The installed add-in exposed `upsert_user_parameter`, reported server version `1
 
 The final disposable document remains unsaved with the test parameter at `50 mm`. No bodies, sketches, or features were created by this validation.
 
+## Live rectangle-sketch evidence
+
+The installed add-in exposed `create_rectangle_sketch` and reported server version `1.3.0`. Against an unsaved blank design, the tool created `Codex_Live_Rectangle_1_3` on the XY plane with driving expressions `40 mm` by `30 mm` and a center of `0 mm`, `0 mm`.
+
+- The result reported four lines, one closed profile, and evaluated dimensions of `40.0 × 30.0 mm`.
+- `get_design_context` confirmed the sketch count changed from zero to one.
+- A top viewport capture visually confirmed a centered 4:3 rectangle.
+- `undo_last_execution` succeeded, and a final context read confirmed the sketch count returned to zero.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -50,4 +60,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, and one-step parameter Undo are verified. No claim is made yet that live geometry creation, screenshots, exports, or approval dialogs have passed; use the mounting-plate procedure above for that separate acceptance scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, or approval dialogs have passed; use the procedure above for that separate acceptance scope.
