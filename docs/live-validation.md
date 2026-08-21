@@ -4,8 +4,8 @@
 - Automated environment: Windows, Python 3.14, Fusion API replaced by test fakes
 - Live Fusion user-parameter status: **passed on Fusion 2704.1.53**
 - Live rectangle-sketch status: **passed on Fusion 2704.1.53**
-- Live new-body extrusion status: **not yet run**
-- Live simple-hole status: **not yet run**
+- Live new-body extrusion status: **passed on Fusion 2704.1.53**
+- Live simple-hole status: **passed on Fusion 2704.1.53**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -13,7 +13,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **91 tests passed**, and `compileall` plus `git diff --check` exited successfully. The explicit new-body extrusion is covered for largest-profile selection, expression validation, name conflicts, empty sketches, recompute rollback, checkpointing, and strict MCP schema. The simple-hole tool is covered for top-face resolution, signed and zero coordinates, driving dimensions, body and feature conflicts, recompute rollback, participant-body targeting, and strict MCP schema. Live Fusion runs for both tools are still pending.
+Current result: **91 tests passed**, and `compileall` plus `git diff --check` exited successfully. The explicit new-body extrusion is covered for largest-profile selection, expression validation, name conflicts, empty sketches, recompute rollback, checkpointing, and strict MCP schema. The simple-hole tool is covered for top-face resolution, signed and zero coordinates, driving dimensions, body and feature conflicts, recompute rollback, participant-body targeting, and strict MCP schema.
 
 Run:
 
@@ -43,6 +43,20 @@ The installed add-in exposed `create_rectangle_sketch` and reported server versi
 - A top viewport capture visually confirmed a centered 4:3 rectangle.
 - `undo_last_execution` succeeded, and a final context read confirmed the sketch count returned to zero.
 
+## Live extrusion and simple-hole evidence
+
+The installed add-in exposed `create_extrusion` and `create_simple_hole` and reported server version `1.5.0`. Against a new unsaved blank design, the validation sequence was:
+
+1. Create `Codex_Validation_Rectangle_1_5` on the XY plane at `40 × 30 mm`.
+2. Create `Codex_Validation_Extrusion_1_5` from its only profile at `12 mm` as a New Body.
+3. Confirm a solid `Body1` with `40 × 30 × 12 mm` bounds and `14.4 cm³` volume.
+4. Create `Codex_Validation_Hole_1_5` on the +Z top face at `(10 mm, 5 mm)`, with `6 mm` diameter and `12 mm` depth.
+5. Confirm the body retained its bounds and its volume decreased to `14.06070799341229 cm³`, matching the removed cylinder volume.
+6. Inspect top and isometric viewport captures and visually confirm the offset circular opening.
+7. Call `undo_last_execution` and confirm the placement sketch and hole feature were removed, the counts returned to one sketch and one feature, and the body volume returned to `14.4 cm³`.
+
+The validation rectangle and extrusion remain only in the disposable unsaved document. The test did not modify or save an existing user design.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -62,4 +76,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, or approval dialogs have passed; use the procedure above for that separate acceptance scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, or threads have passed; those remain separate expansion scope.
