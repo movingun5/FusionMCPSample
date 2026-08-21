@@ -14,6 +14,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 1. Call `get_fusion_status`; stop if Fusion, authentication, or an active design is unavailable.
 2. Call `get_design_context` before modeling; use `scope="all"` for edits. It exposes components, bodies, counts, parameters, and bounds—not UI selections or per-hole geometry.
    For user-parameter creation or edits, prefer `upsert_user_parameter` over arbitrary Python. Read the current expression first and pass it as `expected_old_expression` when updating an existing parameter.
+   For an axis-aligned center-point rectangle on a principal construction plane, prefer `create_rectangle_sketch`. Give it a unique name and explicit Fusion expressions for width, height, and optional center coordinates.
 3. Capture `get_viewport_screenshot` before editing existing geometry. A verified blank design needs no before image.
 4. Resolve dimensions, placement, target, and success criteria. Use explicit units. Ask one question when missing information would alter geometry.
 5. For an uncertain API, call `get_api_documentation(search_term="ClassOrMember", category="all")`; do not invent argument or member names.
@@ -36,6 +37,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 | --- | --- |
 | Inspect | status → context → screenshot if useful |
 | Parameters | status → context → upsert parameter → context |
+| Rectangle sketch | status → context → create rectangle sketch → context → screenshot |
 | Create | status → context → execute → context → screenshot |
 | Edit | status → context → before image → execute → context → after image |
 | Recover | undo → context → screenshot |
