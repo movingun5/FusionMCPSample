@@ -8,7 +8,7 @@
 - Live simple-hole status: **passed on Fusion 2704.1.53**
 - Live constant-radius fillet status: **passed on Fusion 2704.1.53**
 - Live equal-distance chamfer status: **passed on Fusion 2704.1.53**
-- Live single-direction feature-pattern status: **not run**
+- Live single-direction feature-pattern status: **passed on Fusion 2704.1.53**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -16,7 +16,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **115 tests passed**, and `compileall` plus `git diff --check` exited successfully. The single-direction feature-pattern tool is covered for X/Y/Z axis selection, target and name conflicts, quantity and spacing validation, spacing-based API input, recompute rollback, checkpointing, and strict MCP schema. Its live Fusion result is still pending.
+Current result: **115 tests passed**, and `compileall` plus `git diff --check` exited successfully. The single-direction feature-pattern tool is covered for X/Y/Z axis selection, target and name conflicts, quantity and spacing validation, spacing-based API input, recompute rollback, checkpointing, and strict MCP schema.
 
 Run:
 
@@ -87,6 +87,20 @@ After a full Fusion restart, the installed add-in exposed `create_chamfer` and r
 
 The validation rectangle and extrusion remain only in the disposable unsaved document. The chamfer itself was removed by Undo.
 
+## Live single-direction feature-pattern evidence
+
+After a full Fusion restart, the installed add-in exposed `create_linear_pattern` and reported server version `1.8.0`. Against a new unsaved blank design, the validation sequence was:
+
+1. Create a `60 × 30 mm` rectangle and extrude it `10 mm` as `Body1`, producing an `18.0 cm³` solid.
+2. Create `Codex_Pattern_Seed_Hole_1_8`, a `6 mm` diameter, `10 mm` deep hole at `(-20 mm, 0 mm)` on the +Z top face.
+3. Confirm the seed-hole body retained `60 × 30 × 10 mm` bounds, had `17.717256661176904 cm³` volume, and contained two features.
+4. Create `Codex_Hole_Row_1_8` from the seed hole along X with quantity `3` and adjacent spacing `20 mm`.
+5. Confirm an evaluated spacing of `20.0 mm`, three total features, unchanged body bounds, and a reduced volume of `17.15176998353072 cm³`.
+6. Compare top captures and visually confirm three aligned `6 mm` openings at X positions `-20`, `0`, and `20 mm`.
+7. Call `undo_last_execution` and confirm the feature count returned to two, the volume returned to `17.717256661176904 cm³`, and the final top capture showed only the original seed hole.
+
+The validation plate and seed hole remain only in the disposable unsaved document. The linear pattern itself was removed by Undo.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -106,4 +120,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. The single-direction feature-pattern tool has automated coverage but not yet live evidence. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, or body patterns have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, or body patterns have passed; those remain separate expansion scope.
