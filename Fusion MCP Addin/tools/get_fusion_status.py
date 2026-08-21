@@ -2,6 +2,7 @@
 
 import adsk.core
 
+from ..core.results import tool_success
 from ..fusion.context import get_status
 from ..mcp_primitives.item import Item
 from ..mcp_primitives.registry import register
@@ -12,7 +13,7 @@ SERVER_VERSION = "1.1.0"
 
 
 def handler():
-    return get_status(adsk.core.Application.get(), SERVER_VERSION)
+    return tool_success(get_status(adsk.core.Application.get(), SERVER_VERSION))
 
 
 tool = Tool.create_simple(

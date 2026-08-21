@@ -3,6 +3,7 @@
 import adsk.core
 
 from ..core.errors import MCPError
+from ..core.results import tool_success
 from ..fusion.context import build_design_context
 from ..mcp_primitives.item import Item
 from ..mcp_primitives.registry import register
@@ -11,7 +12,9 @@ from ..mcp_primitives.tool import Tool
 
 def handler(scope="summary", limit=200):
     try:
-        return build_design_context(adsk.core.Application.get(), scope=scope, limit=limit)
+        return tool_success(
+            build_design_context(adsk.core.Application.get(), scope=scope, limit=limit)
+        )
     except ValueError as error:
         code = str(error)
         if code not in {"FUSION_UNAVAILABLE", "NO_ACTIVE_DESIGN"}:
