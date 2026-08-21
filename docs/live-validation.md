@@ -6,7 +6,7 @@
 - Live rectangle-sketch status: **passed on Fusion 2704.1.53**
 - Live new-body extrusion status: **passed on Fusion 2704.1.53**
 - Live simple-hole status: **passed on Fusion 2704.1.53**
-- Live constant-radius fillet status: **not yet run**
+- Live constant-radius fillet status: **passed on Fusion 2704.1.53**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -14,7 +14,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **99 tests passed**, and `compileall` plus `git diff --check` exited successfully. The constant-radius fillet tool is covered for all/top/bottom/vertical edge selection, expression validation, body and feature conflicts, empty selection rejection, recompute rollback, checkpointing, and strict MCP schema. Its live Fusion run is still pending.
+Current result: **99 tests passed**, and `compileall` plus `git diff --check` exited successfully. The constant-radius fillet tool is covered for all/top/bottom/vertical edge selection, expression validation, body and feature conflicts, empty selection rejection, recompute rollback, checkpointing, and strict MCP schema.
 
 Run:
 
@@ -58,6 +58,19 @@ The installed add-in exposed `create_extrusion` and `create_simple_hole` and rep
 
 The validation rectangle and extrusion remain only in the disposable unsaved document. The test did not modify or save an existing user design.
 
+## Live constant-radius fillet evidence
+
+The installed add-in exposed `create_fillet` and reported server version `1.6.0`. Against a new unsaved blank design, the validation sequence was:
+
+1. Create a `40 × 30 mm` rectangle and extrude it `12 mm` as `Body1`.
+2. Confirm the unmodified body measured `40 × 30 × 12 mm` with `14.4 cm³` volume and one feature.
+3. Create `Codex_Vertical_Fillet_1_6` with `edge_selector = "vertical"`, `radius_expression = "2 mm"`, and tangent chaining enabled.
+4. Confirm four selected edges, an evaluated radius of `2.0 mm`, two total features, unchanged body bounds, and a reduced volume of `14.35879644737231 cm³`.
+5. Compare before and after isometric captures and visually confirm that all four vertical corners became rounded while the top and bottom perimeter edges remained sharp.
+6. Call `undo_last_execution` and confirm the feature count returned to one, the volume returned to `14.4 cm³`, and the isometric capture showed the original sharp vertical corners.
+
+The validation body remains only in the disposable unsaved document, and the fillet itself was removed by Undo.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -77,4 +90,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, or threads have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, chamfers, or patterns have passed; those remain separate expansion scope.
