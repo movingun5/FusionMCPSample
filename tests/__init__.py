@@ -23,6 +23,7 @@ if "adsk" not in sys.modules:
     core_module.Application = _Application
     core_module.CustomEventHandler = object
     core_module.CustomEventArgs = object
+    core_module.ViewOrientations = object
     adsk_module.core = core_module
     adsk_module.fusion = fusion_module
     sys.modules["adsk"] = adsk_module
