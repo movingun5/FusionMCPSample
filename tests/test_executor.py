@@ -5,6 +5,7 @@ import unittest
 
 import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.core.audit import AuditLogger
+from fusion_mcp_addin.fusion.checkpoints import clear_last_checkpoint, get_last_checkpoint
 from fusion_mcp_addin.fusion.executor import execute_code
 from tests.fakes import FakeApp, FakeBody, FakeComponent, FakeDesign, FakeUI
 
@@ -30,6 +31,9 @@ class ExecutorTests(unittest.TestCase):
             **kwargs,
         )
 
+    def tearDown(self):
+        clear_last_checkpoint()
+
     def test_routine_code_executes_without_prompt_and_captures_stdout(self):
         result = self.execute("def run(context):\n    print(context['rootComponent'].name)")
 
@@ -38,6 +42,15 @@ class ExecutorTests(unittest.TestCase):
         self.assertEqual("Root", result["stdout"].strip())
         self.assertEqual([], self.ui.messages)
         self.assertTrue(result["verification"]["expectations_met"])
+
+    def test_success_records_shared_checkpoint(self):
+        result = self.execute("def run(context):\n    return 'ok'")
+
+        checkpoint = get_last_checkpoint()
+
+        self.assertFalse(result["isError"])
+        self.assertEqual("execute_fusion_python", checkpoint["mutation"])
+        self.assertEqual(self.design.parentDocument.id, checkpoint["document_id"])
 
     def test_code_must_define_run_with_one_argument(self):
         result = self.execute("value = 1")

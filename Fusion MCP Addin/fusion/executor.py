@@ -15,19 +15,8 @@ import traceback
 from ..core.audit import AuditLogger
 from ..core.errors import MCPError
 from ..core.policy import classify_code
+from .checkpoints import record_checkpoint
 from .snapshot import capture_snapshot, compare_snapshots, safe_value
-
-
-_last_checkpoint = None
-
-
-def get_last_checkpoint():
-    return dict(_last_checkpoint) if _last_checkpoint else None
-
-
-def clear_last_checkpoint():
-    global _last_checkpoint
-    _last_checkpoint = None
 
 
 def _default_audit_logger():
@@ -249,13 +238,13 @@ def execute_code(
         if transaction_started:
             app.executeTextCommand("PTransaction.Commit")
 
-        global _last_checkpoint
-        _last_checkpoint = {
+        record_checkpoint({
             "request_id": request_id,
+            "mutation": "execute_fusion_python",
             "code_hash": decision.code_hash,
             "document_id": before["document"]["id"],
             "timeline_marker": before["timeline"]["marker_position"],
-        }
+        })
         serializable_return = (
             run_result
             if isinstance(run_result, (type(None), bool, int, float, str, list, dict))

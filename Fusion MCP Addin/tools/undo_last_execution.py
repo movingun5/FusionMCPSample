@@ -2,7 +2,7 @@
 
 import adsk.core
 
-from ..fusion.executor import clear_last_checkpoint, get_last_checkpoint
+from ..fusion.checkpoints import clear_last_checkpoint, get_last_checkpoint
 from ..fusion.undo import undo_with
 from ..mcp_primitives.item import Item
 from ..mcp_primitives.registry import register
@@ -19,7 +19,7 @@ def handler():
 tool = Tool.create_simple(
     name="undo_last_execution",
     description=(
-        "Undo the latest successful execute_fusion_python transaction in the same active document. "
+        "Undo the latest successful Fusion MCP mutation in the same active document. "
         "Arbitrary Python cannot be promised universal rollback beyond Fusion's undo support."
     ),
 ).strict_schema()
