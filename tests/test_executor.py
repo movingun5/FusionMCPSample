@@ -97,6 +97,16 @@ class ExecutorTests(unittest.TestCase):
         self.assertEqual("RECOMPUTE_FAILED", result["error"]["code"])
         self.assertIn("PTransaction.Abort", self.app.commands[-1])
 
+    def test_runtime_error_response_omits_full_traceback_but_audit_keeps_it(self):
+        result = self.execute("def run(context):\n    return 1 / 0")
+
+        self.assertEqual("FUSION_API_ERROR", result["error"]["code"])
+        self.assertNotIn("traceback", result["error"]["details"])
+        self.assertIn("line", result["error"]["details"])
+        audit_text = self.audit.path.read_text(encoding="utf-8")
+        self.assertIn("local_traceback", audit_text)
+        self.assertIn("ZeroDivisionError", audit_text)
+
     def test_audit_log_records_code_hash_and_not_environment_secrets(self):
         result = self.execute("def run(context):\n    print('ok')")
 

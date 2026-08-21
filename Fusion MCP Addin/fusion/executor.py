@@ -285,13 +285,26 @@ def execute_code(
         return result
     except Exception as error:
         _abort_transaction(app, transaction_started)
+        local_traceback = traceback.format_exc()
+        frames = traceback.extract_tb(error.__traceback__)
+        last_frame = frames[-1] if frames else None
         details = {
             "exception_type": type(error).__name__,
-            "traceback": traceback.format_exc(),
+            "line": last_frame.lineno if last_frame else None,
+            "function": last_frame.name if last_frame else None,
+            "source": Path(last_frame.filename).name if last_frame else None,
             "documentation_search_term": type(error).__name__,
             "undo_result": "transaction_aborted" if transaction_started else "not_started",
         }
         result = _error("FUSION_API_ERROR", str(error), retryable=True, details=details)
         result["policy"] = decision.to_dict()
-        _audit(logger, {**base_audit, "result": result, "duration_ms": int((time.time() - started_at) * 1000)})
+        _audit(
+            logger,
+            {
+                **base_audit,
+                "result": result,
+                "local_traceback": local_traceback,
+                "duration_ms": int((time.time() - started_at) * 1000),
+            },
+        )
         return result

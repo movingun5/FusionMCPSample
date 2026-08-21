@@ -9,7 +9,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **50 tests passed**, and `compileall` plus `git diff --check` exited successfully.
+Current result: **51 tests passed**, and `compileall` plus `git diff --check` exited successfully.
 
 Run:
 
