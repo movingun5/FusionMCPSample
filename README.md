@@ -72,6 +72,14 @@ python scripts/check_install.py --addon-path "Fusion MCP Addin"
 
 Set `FUSION_MCP_TOKEN` at user scope, then fully restart both Fusion and ChatGPT so both processes inherit the same value. The MCP server binds only to `127.0.0.1:9100`.
 
+After opening a new blank Fusion design, run the live phase-1 acceptance flow:
+
+```powershell
+python scripts/live_acceptance.py --confirm-blank-design --report docs/live-validation-result.json
+```
+
+See [live validation status](docs/live-validation.md). A missing live run is reported as unverified, never as a pass.
+
 CAD files and the add-in remain local. Prompts, MCP results, error summaries, and screenshots supplied to Codex may be sent to OpenAI's model service.
 
 ## License
