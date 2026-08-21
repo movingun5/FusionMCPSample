@@ -97,6 +97,10 @@ Create one named constant-radius fillet on a named solid body. Select `all`, `to
 
 Create one named equal-distance chamfer on a named solid body. Select `all`, `top`, `bottom`, or `vertical` body edges and provide a positive Fusion expression such as `2 mm` or `edge_chamfer`. The tool uses Fusion's current multi-edge-set chamfer API, validates all inputs before mutation, recomputes the design, and records an Undo checkpoint.
 
+### create_linear_pattern
+
+Create one named single-direction pattern of an existing named feature along the active component's X, Y, or Z construction axis. The total quantity includes the original feature, and `spacing_expression` defines the distance between adjacent instances. A negative spacing reverses direction. This first pattern version supports one direction and feature targets; two-direction, circular, and body patterns remain future extensions.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.

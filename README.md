@@ -24,6 +24,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **create_simple_hole**: Create a named, parametrically positioned simple hole on a named solid body's planar +Z top face
 - **create_fillet**: Apply a named constant-radius fillet to all, top, bottom, or vertical edges of a named solid body
 - **create_chamfer**: Apply a named equal-distance chamfer to all, top, bottom, or vertical edges of a named solid body
+- **create_linear_pattern**: Repeat a named feature along the X, Y, or Z construction axis using a count and adjacent-spacing expression
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions

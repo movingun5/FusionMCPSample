@@ -16,6 +16,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
    For user-parameter creation or edits, prefer `upsert_user_parameter` over arbitrary Python. Read the current expression first and pass it as `expected_old_expression` when updating an existing parameter.
    For an axis-aligned center-point rectangle on a principal construction plane, prefer `create_rectangle_sketch`. Give it a unique name and explicit Fusion expressions for width, height, and optional center coordinates.
    For a constant-radius edge round, prefer `create_fillet`. For an equal-distance bevel, prefer `create_chamfer`. Both tools accept a named solid body, a unique feature name, a positive Fusion length expression, and the stable selectors `all`, `top`, `bottom`, or `vertical`.
+   For a one-direction repetition of an existing named feature, prefer `create_linear_pattern`. Choose X, Y, or Z, make the total quantity include the original, and use a non-zero adjacent-spacing expression; a negative spacing reverses direction.
 3. Capture `get_viewport_screenshot` before editing existing geometry. A verified blank design needs no before image.
 4. Resolve dimensions, placement, target, and success criteria. Use explicit units. Ask one question when missing information would alter geometry.
 5. For an uncertain API, call `get_api_documentation(search_term="ClassOrMember", category="all")`; do not invent argument or member names.
@@ -41,6 +42,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 | Rectangle sketch | status → context → create rectangle sketch → context → screenshot |
 | Fillet | status → context → before image → create fillet → context → after image |
 | Chamfer | status → context → before image → create chamfer → context → after image |
+| Linear pattern | status → context → before image → create linear pattern → context → after image |
 | Other create | status → context → execute → context → screenshot |
 | Other edit | status → context → before image → execute → context → after image |
 | Recover | undo → context → screenshot |
