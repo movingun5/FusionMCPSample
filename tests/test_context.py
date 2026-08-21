@@ -29,7 +29,7 @@ class ContextTests(unittest.TestCase):
     def test_status_defaults_to_parameter_tool_server_version(self):
         status = get_status(self.app)
 
-        self.assertEqual("1.2.0", status["server_version"])
+        self.assertEqual("1.3.0", status["server_version"])
 
     def test_context_returns_components_bodies_and_parameters(self):
         context = build_design_context(self.app, scope="all", limit=20)
