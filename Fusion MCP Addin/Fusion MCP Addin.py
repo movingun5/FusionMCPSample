@@ -3,6 +3,7 @@ Fusion Add-in that provides HTTP API for MCP communication
 Communicates with the Go MCP proxy server
 """
 
+import os
 import traceback
 import adsk.core
 import adsk.fusion
@@ -20,7 +21,7 @@ mcp = None
 server = None
 thread = None
 
-HOST = 'localhost'
+HOST = '127.0.0.1'
 PORT = 9100
 
 # Fusion Add-in Entry Points
@@ -29,6 +30,17 @@ def run(context):
 
     try:
         global app, mcp, server, thread, ui
+
+        bearer_token = os.environ.get("FUSION_MCP_TOKEN", "")
+        if not bearer_token:
+            message = (
+                "Fusion MCP Add-in did not start because FUSION_MCP_TOKEN "
+                "is not configured."
+            )
+            app.log(message)
+            if ui:
+                ui.messageBox(message)
+            return
 
         TaskManager.start()
 
@@ -40,7 +52,8 @@ def run(context):
             host=HOST,
             port=PORT,
             tools=tools,
-            resources=resources
+            resources=resources,
+            bearer_token=bearer_token,
         )
 
         # Start HTTP server with integrated ThreadExecutor

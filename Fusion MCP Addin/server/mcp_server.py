@@ -16,8 +16,10 @@ from typing import Any, Dict, Tuple, Optional
 from ..mcp_primitives.tool import Tool
 from ..mcp_primitives.resource import Resource
 from ..mcp_primitives.item import Item
+from .auth import verify_authorization
 from .task_manager import TaskManager
 
+app = None
 try:
     import adsk.core
     app = adsk.core.Application.get()
@@ -381,12 +383,40 @@ class SimpleMCPServer:
 class MCPHandler(BaseHTTPRequestHandler):
     """HTTP request handler for MCP protocol over HTTP."""
 
-    def __init__(self, *args, mcp_server=None, **kwargs):
+    def __init__(self, *args, mcp_server=None, bearer_token=None, **kwargs):
         self.mcp_server = mcp_server
+        self.bearer_token = bearer_token
         super().__init__(*args, **kwargs)
+
+    def _is_authorized(self):
+        return verify_authorization(
+            self.headers.get("Authorization"),
+            self.bearer_token,
+        )
+
+    def _send_auth_failure(self):
+        self._send_json_response(
+            {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {
+                    "code": -32001,
+                    "message": "Authentication failed",
+                    "data": {
+                        "code": "AUTH_FAILED",
+                        "retryable": False,
+                    },
+                },
+            },
+            status_code=401,
+            extra_headers={"WWW-Authenticate": "Bearer"},
+        )
 
     def do_POST(self):
         """Handle MCP protocol requests"""
+        if not self._is_authorized():
+            self._send_auth_failure()
+            return
         try:
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
@@ -405,7 +435,13 @@ class MCPHandler(BaseHTTPRequestHandler):
         """Handle GET requests for health checks"""
         if self.path == '/health':
             self._send_json_response({"status": "healthy", "server": "MCP"})
-        elif self.path == '/tools':
+            return
+
+        if not self._is_authorized():
+            self._send_auth_failure()
+            return
+
+        if self.path == '/tools':
             # Debug endpoint to see tools list
             response = self.mcp_server._handle_tools_list(1)
             self._send_json_response(response)
@@ -417,11 +453,12 @@ class MCPHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
-    def _send_json_response(self, data):
+    def _send_json_response(self, data, status_code=200, extra_headers=None):
         """Send JSON response"""
-        self.send_response(200)
+        self.send_response(status_code)
         self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        for name, value in (extra_headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
 
         response_json = json.dumps(data, indent=2)
@@ -433,10 +470,11 @@ class MCPHandler(BaseHTTPRequestHandler):
 
 
 def start_mcp_server(
-    host: str = 'localhost',
+    host: str = '127.0.0.1',
     port: int = 9100,
     tools: Optional[Dict[str, Any]] = None,
-    resources: Optional[Dict[str, Any]] = None
+    resources: Optional[Dict[str, Any]] = None,
+    bearer_token: Optional[str] = None,
 ) -> Tuple[Optional[SimpleMCPServer], Optional[ThreadedHTTPServer], Optional[threading.Thread]]:
     """
     Start a simple MCP-compatible server over HTTP that can run in Fusion 360.
@@ -451,6 +489,11 @@ def start_mcp_server(
         Tuple containing (mcp_server, http_server, server_thread) or (None, None, None) if failed
     """
     try:
+        if host != "127.0.0.1":
+            raise ValueError("MCP server must bind to 127.0.0.1")
+        if not bearer_token:
+            raise ValueError("FUSION_MCP_TOKEN is required")
+
         # Create simple MCP server
         mcp = SimpleMCPServer("Fusion MCP Server")
 
@@ -470,7 +513,12 @@ def start_mcp_server(
         # Create handler class with embedded MCP server
         class HandlerWithMCP(MCPHandler):
             def __init__(self, *args, **kwargs):
-                super().__init__(*args, mcp_server=mcp, **kwargs)
+                super().__init__(
+                    *args,
+                    mcp_server=mcp,
+                    bearer_token=bearer_token,
+                    **kwargs,
+                )
 
         http_server = ThreadedHTTPServer(server_address, HandlerWithMCP)
 
