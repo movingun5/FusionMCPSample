@@ -81,6 +81,10 @@ For information and other setup options see the [mcp-remote documentation here](
 
 Once the add-in is running, the following MCP tools are available:
 
+### create_extrusion
+
+Create a named solid New Body from the largest closed profile in an existing named sketch. The distance is a Fusion expression such as `height` or `25 mm`; a negative value reverses direction. The tool rejects zero distance, missing or empty sketches, and duplicate extrusion names before modifying the design.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
