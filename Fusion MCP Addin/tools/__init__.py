@@ -16,6 +16,7 @@ from . import upsert_user_parameter
 from . import create_rectangle_sketch
 from . import create_extrusion
 from . import create_simple_hole
+from . import create_fillet
 from . import get_viewport_screenshot
 from . import undo_last_execution
 from . import export_design

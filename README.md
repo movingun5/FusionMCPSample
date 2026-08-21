@@ -22,6 +22,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **create_rectangle_sketch**: Create a named center-point rectangle on XY/XZ/YZ with Fusion expressions as driving dimensions
 - **create_extrusion**: Extrude the largest closed profile in a named sketch as a named solid New Body using a Fusion distance expression
 - **create_simple_hole**: Create a named, parametrically positioned simple hole on a named solid body's planar +Z top face
+- **create_fillet**: Apply a named constant-radius fillet to all, top, bottom, or vertical edges of a named solid body
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions

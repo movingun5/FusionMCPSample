@@ -89,6 +89,10 @@ Create a named solid New Body from the largest closed profile in an existing nam
 
 Create one named simple hole on the planar +Z top face of a named solid body. The X coordinate, Y coordinate, diameter, and depth are driving Fusion expressions, and the generated placement sketch remains in the timeline so parameter edits can reposition the hole. This first explicit-hole version targets the +Z top face and distance depth; other faces, through-all, countersink, counterbore, and thread options remain future extensions.
 
+### create_fillet
+
+Create one named constant-radius fillet on a named solid body. Select `all`, `top`, `bottom`, or `vertical` body edges and provide a positive Fusion expression such as `2 mm` or `edge_radius`. The tool validates the body, expression, feature name, and selected edge group before modifying the design, then recomputes and records an Undo checkpoint.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.

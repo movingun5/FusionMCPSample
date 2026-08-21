@@ -6,6 +6,7 @@
 - Live rectangle-sketch status: **passed on Fusion 2704.1.53**
 - Live new-body extrusion status: **passed on Fusion 2704.1.53**
 - Live simple-hole status: **passed on Fusion 2704.1.53**
+- Live constant-radius fillet status: **not yet run**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -13,7 +14,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **91 tests passed**, and `compileall` plus `git diff --check` exited successfully. The explicit new-body extrusion is covered for largest-profile selection, expression validation, name conflicts, empty sketches, recompute rollback, checkpointing, and strict MCP schema. The simple-hole tool is covered for top-face resolution, signed and zero coordinates, driving dimensions, body and feature conflicts, recompute rollback, participant-body targeting, and strict MCP schema.
+Current result: **99 tests passed**, and `compileall` plus `git diff --check` exited successfully. The constant-radius fillet tool is covered for all/top/bottom/vertical edge selection, expression validation, body and feature conflicts, empty selection rejection, recompute rollback, checkpointing, and strict MCP schema. Its live Fusion run is still pending.
 
 Run:
 
