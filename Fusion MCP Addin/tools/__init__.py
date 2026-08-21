@@ -12,3 +12,6 @@ from . import get_best_practices
 from . import get_screenshot
 from . import get_fusion_status
 from . import get_design_context
+from . import get_viewport_screenshot
+from . import undo_last_execution
+from . import export_design

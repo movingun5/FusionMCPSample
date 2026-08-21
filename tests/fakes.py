@@ -138,3 +138,21 @@ class FakeUI:
     def messageBox(self, message, *args):
         self.messages.append(message)
         return "DialogYes" if self.approval else "DialogNo"
+
+
+class FakeExportManager:
+    def __init__(self):
+        self.executed = []
+
+    def createSTEPExportOptions(self, path, entity):
+        return {"format": "step", "path": path, "entity": entity}
+
+    def createSTLExportOptions(self, entity, path):
+        return {"format": "stl", "path": path, "entity": entity}
+
+    def execute(self, options):
+        from pathlib import Path
+
+        self.executed.append(options)
+        Path(options["path"]).write_bytes(b"fusion-export")
+        return True
