@@ -116,6 +116,25 @@ class FakeApp:
         self.activeProduct = design
         self.activeDocument = document or (design.parentDocument if design else None)
         self.activeViewport = FakeViewport()
+        self.logs = []
+        self.commands = []
 
     def getVersion(self):
         return "2.0-test"
+
+    def log(self, message):
+        self.logs.append(message)
+
+    def executeTextCommand(self, command):
+        self.commands.append(command)
+        return ""
+
+
+class FakeUI:
+    def __init__(self, approval=True):
+        self.approval = approval
+        self.messages = []
+
+    def messageBox(self, message, *args):
+        self.messages.append(message)
+        return "DialogYes" if self.approval else "DialogNo"
