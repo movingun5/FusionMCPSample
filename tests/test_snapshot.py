@@ -28,6 +28,17 @@ class SnapshotTests(unittest.TestCase):
         self.assertTrue(result["expectations_met"])
         self.assertEqual([], result["mismatches"])
 
+    def test_numeric_zero_health_state_is_healthy(self):
+        feature = FakeFeature("Extrude", "feature-1")
+        feature.healthState = 0
+        design = FakeDesign([
+            FakeComponent("Root", "component-1", features=[feature])
+        ])
+
+        snapshot = capture_snapshot(design)
+
+        self.assertEqual([], snapshot["failed_features"])
+
     def test_snapshot_delta_reports_mismatch_and_failed_features(self):
         before = {"counts": {"features": 2}, "failed_features": []}
         after = {"counts": {"features": 2}, "failed_features": [{"name": "Extrude"}]}

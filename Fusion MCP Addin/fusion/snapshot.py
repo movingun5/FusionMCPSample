@@ -60,6 +60,11 @@ def _feature_summary(feature):
     }
 
 
+def _is_healthy_feature(feature):
+    health = feature["health"]
+    return health == "0" or "healthy" in health.lower()
+
+
 def capture_snapshot(design):
     """Capture JSON-serializable design state from the current request."""
 
@@ -89,9 +94,7 @@ def capture_snapshot(design):
             for feature in iter_collection(safe_value(component, "features"))
         )
 
-    failed_features = [
-        feature for feature in features if "healthy" not in feature["health"].lower()
-    ]
+    failed_features = [feature for feature in features if not _is_healthy_feature(feature)]
     parameters = [
         {
             "name": safe_value(parameter, "name", ""),
