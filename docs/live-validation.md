@@ -1,13 +1,13 @@
 # Live Fusion validation status
 
-- Date: 2026-08-21
+- Date: 2026-08-22
 - Automated environment: Windows, Python 3.14, Fusion API replaced by test fakes
 - Live Fusion user-parameter status: **passed on Fusion 2704.1.53**
 - Live rectangle-sketch status: **passed on Fusion 2704.1.53**
 - Live new-body extrusion status: **passed on Fusion 2704.1.53**
 - Live simple-hole status: **passed on Fusion 2704.1.53**
 - Live constant-radius fillet status: **passed on Fusion 2704.1.53**
-- Live equal-distance chamfer status: **not run**
+- Live equal-distance chamfer status: **passed on Fusion 2704.1.53**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -15,7 +15,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **107 tests passed**, and `compileall` plus `git diff --check` exited successfully. The constant-radius fillet and equal-distance chamfer tools are covered for all/top/bottom/vertical edge selection, expression validation, body and feature conflicts, empty selection rejection, recompute rollback, checkpointing, and strict MCP schemas. The chamfer result is still pending live Fusion validation.
+Current result: **107 tests passed**, and `compileall` plus `git diff --check` exited successfully. The constant-radius fillet and equal-distance chamfer tools are covered for all/top/bottom/vertical edge selection, expression validation, body and feature conflicts, empty selection rejection, recompute rollback, checkpointing, and strict MCP schemas.
 
 Run:
 
@@ -72,6 +72,20 @@ The installed add-in exposed `create_fillet` and reported server version `1.6.0`
 
 The validation body remains only in the disposable unsaved document, and the fillet itself was removed by Undo.
 
+## Live equal-distance chamfer evidence
+
+After a full Fusion restart, the installed add-in exposed `create_chamfer` and reported server version `1.7.0`. Against a new unsaved blank design, the validation sequence was:
+
+1. Confirm the design contained zero bodies, zero sketches, and zero features.
+2. Create a `40 × 30 mm` rectangle and extrude it `12 mm` as `Body1`.
+3. Confirm the unmodified solid measured `40 × 30 × 12 mm`, had `14.4 cm³` volume, and contained one feature.
+4. Create `Codex_Vertical_Chamfer_1_7` with `edge_selector = "vertical"`, `distance_expression = "2 mm"`, and tangent chaining enabled.
+5. Confirm four selected edges, an evaluated distance of `2.0 mm`, two total features, unchanged body bounds, and a reduced volume of `14.304 cm³`.
+6. Compare before and after isometric captures and visually confirm four equal flat bevel faces along the vertical corners while the top and bottom perimeter edges remained sharp.
+7. Call `undo_last_execution` and confirm the feature count returned to one, the volume returned to `14.4 cm³`, and the final isometric capture matched the original sharp-corner body.
+
+The validation rectangle and extrusion remain only in the disposable unsaved document. The chamfer itself was removed by Undo.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -91,4 +105,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. The equal-distance chamfer tool has automated coverage but not yet live evidence. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, chamfers, or patterns have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, or patterns have passed; those remain separate expansion scope.
