@@ -93,6 +93,10 @@ Create one named simple hole on the planar +Z top face of a named solid body. Th
 
 Create one named constant-radius fillet on a named solid body. Select `all`, `top`, `bottom`, or `vertical` body edges and provide a positive Fusion expression such as `2 mm` or `edge_radius`. The tool validates the body, expression, feature name, and selected edge group before modifying the design, then recomputes and records an Undo checkpoint.
 
+### create_chamfer
+
+Create one named equal-distance chamfer on a named solid body. Select `all`, `top`, `bottom`, or `vertical` body edges and provide a positive Fusion expression such as `2 mm` or `edge_chamfer`. The tool uses Fusion's current multi-edge-set chamfer API, validates all inputs before mutation, recomputes the design, and records an Undo checkpoint.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
