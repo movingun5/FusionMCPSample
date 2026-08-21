@@ -25,7 +25,7 @@ def undo_with(app, checkpoint):
         return MCPError("NO_ACTIVE_DESIGN", "Open the checkpoint design first.", True).to_result()
 
     try:
-        app.executeTextCommand("Commands.Start Undo")
+        app.executeTextCommand("Commands.Start UndoCommand")
         recomputed = design.computeAll()
         if recomputed is False:
             return MCPError(

@@ -27,7 +27,7 @@ class UndoTests(unittest.TestCase):
         result = undo_with(self.app, checkpoint)
 
         self.assertFalse(result["isError"])
-        self.assertEqual("Commands.Start Undo", self.app.commands[-1])
+        self.assertEqual("Commands.Start UndoCommand", self.app.commands[-1])
         self.assertEqual("request-1", result["undone_request_id"])
 
 
