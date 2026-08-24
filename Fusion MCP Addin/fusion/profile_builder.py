@@ -215,10 +215,16 @@ class FusionProfileBuilder:
                     point = sketch.originPoint
                 else:
                     seed_fraction = (index + 1.0) / (vertex_count + 1.0)
+                    seed_x = seed_scale * (3.0 + seed_fraction)
+                    seed_y = seed_scale * (5.0 + seed_fraction)
+                    if vertex["x_cm"] < 0:
+                        seed_x = -seed_x
+                    if vertex["y_cm"] < 0:
+                        seed_y = -seed_y
                     point = sketch.sketchPoints.add(
                         self.point_factory(
-                            seed_scale * (3.0 + seed_fraction),
-                            seed_scale * (5.0 + seed_fraction),
+                            seed_x,
+                            seed_y,
                             0.0,
                         )
                     )

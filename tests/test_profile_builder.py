@@ -199,6 +199,27 @@ class ProfileBuilderTests(unittest.TestCase):
 
         self.assertEqual([], inferred)
 
+    def test_seeds_points_on_the_same_side_of_each_target_coordinate(self):
+        self.design.designIntent = "PartDesignIntentType"
+        self.root.features = _Features(self.root)
+        evaluated = self.evaluated()
+
+        result = self.builder().build("LProfile", evaluated)
+
+        for point, vertex in zip(result["profile_points"], evaluated["vertices"]):
+            if vertex["x_cm"] < 0:
+                self.assertLess(point.geometry.x, 0)
+            elif vertex["x_cm"] > 0:
+                self.assertGreater(point.geometry.x, 0)
+            else:
+                self.assertNotEqual(0, point.geometry.x)
+            if vertex["y_cm"] < 0:
+                self.assertLess(point.geometry.y, 0)
+            elif vertex["y_cm"] > 0:
+                self.assertGreater(point.geometry.y, 0)
+            else:
+                self.assertNotEqual(0, point.geometry.y)
+
     def test_rolls_back_hybrid_occurrence_and_parameters_after_extrusion_failure(self):
         self.root.occurrences = FakeOccurrences(
             component_factory=lambda: _component_factory(fail_extrusion=True)
