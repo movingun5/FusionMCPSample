@@ -10,7 +10,7 @@
 - Live equal-distance chamfer status: **passed on Fusion 2704.1.53**
 - Live single-direction feature-pattern status: **passed on Fusion 2704.1.53**
 - Live feature-owned model-parameter update status: **passed on Fusion 2704.1.53**
-- Live calibrated reference-canvas status: **not run; restart required for server 2.0.0**
+- Live calibrated reference-canvas status: **passed on Fusion 2704.1.53 with server 2.0.0**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -18,7 +18,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **138 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection, center offsets, opacity, both flips, name conflicts, recompute rollback, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Live Fusion validation still requires a restart. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
+Current result: **141 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
 
 Run:
 
@@ -115,6 +115,19 @@ After a full Fusion and Codex restart, the installed add-in exposed `update_mode
 
 The validation rectangle and extrusion remain only in the disposable unsaved document at the restored `10 mm` height. The test did not save or modify an existing user design.
 
+## Live calibrated reference-canvas evidence
+
+After installing the server 2.0.0 add-in and fully restarting Fusion, the authenticated server tool catalog exposed `create_reference_canvas`. Against a new unsaved blank design, the validation sequence was:
+
+1. Confirm zero bodies, sketches, features, and canvases through `get_design_context(scope="all")`.
+2. Create `Codex_Reference_Canvas_2_0` from the 900 × 600 test image on the XY construction plane with a calibrated width of `100 mm`, center `0 mm, 0 mm`, opacity 50, and no flips.
+3. Confirm recomputation and checkpoint creation. The result reported only the basename `reference-plate-3x2.png`, size 30,523 bytes, plane `xy`, width `100.0 mm`, derived height `66.666671 mm`, and center `[0.0, 0.0]`; no full local path or image bytes were returned.
+4. Confirm the design context changed from zero to one canvas and independently reported `plane = xy`, `100.0 × 66.666671 mm`, center `0.0, 0.0`, opacity 50, and selectable true.
+5. Capture the top viewport and visually confirm a centered 3:2 canvas outline with the reference image visible at the expected proportions.
+6. Call `undo_last_execution`. The canvas-specific checkpoint rollback removed the exact canvas, recomputed the design, and a final context read confirmed the canvas count returned to zero. The final top capture showed only the blank grid.
+
+An already-open Codex task retained its pre-update callable-tool cache even though the restarted server's authenticated `/tools` catalog included `create_reference_canvas`. The live creation therefore used the same authenticated MCP `tools/call` endpoint directly. Discovery of the new typed tool in a newly created Codex task remains a separate client-cache check; server registration and execution are verified.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -134,4 +147,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that calibrated reference canvases, the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, calibrated XY reference canvases, viewport screenshots, and checkpoint-targeted canvas Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that a newly created Codex task refreshes the typed tool catalog, XZ/YZ live canvases, multiple-view image reconstruction, automatic OCR or contour tracing, the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
