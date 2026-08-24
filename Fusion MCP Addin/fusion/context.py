@@ -35,7 +35,7 @@ def _app_version(app):
     return None
 
 
-def get_status(app, server_version="2.1.0"):
+def get_status(app, server_version="2.2.0"):
     if app is None:
         return {
             "fusion_available": False,

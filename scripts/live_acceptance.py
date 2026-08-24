@@ -21,45 +21,28 @@ REQUIRED_TOOLS = {
     "get_api_documentation",
     "undo_last_execution",
     "export_design",
+    "create_parametric_plate",
+    "upsert_user_parameter",
 }
 
 
-def build_mounting_plate_code():
-    """Return routine Fusion Python for a 100×60×5 mm plate with four M6 holes."""
+def build_parametric_plate_arguments():
+    """Return the explicit 100×60×5 mm four-hole plate request."""
 
-    return '''def run(context):
-    root = context["rootComponent"]
-    sketch = root.sketches.add(root.xYConstructionPlane)
-    sketch.name = "Codex_Mounting_Plate_Sketch"
-    lines = sketch.sketchCurves.sketchLines
-    circles = sketch.sketchCurves.sketchCircles
-    lines.addTwoPointRectangle(
-        adsk.core.Point3D.create(0.0, 0.0, 0.0),
-        adsk.core.Point3D.create(10.0, 6.0, 0.0),
-    )
-    circles.addByCenterRadius(adsk.core.Point3D.create(1.0, 1.0, 0.0), 0.3)
-    circles.addByCenterRadius(adsk.core.Point3D.create(9.0, 1.0, 0.0), 0.3)
-    circles.addByCenterRadius(adsk.core.Point3D.create(1.0, 5.0, 0.0), 0.3)
-    circles.addByCenterRadius(adsk.core.Point3D.create(9.0, 5.0, 0.0), 0.3)
-    plate_profile = None
-    largest_area = -1.0
-    for index in range(sketch.profiles.count):
-        profile = sketch.profiles.item(index)
-        area = profile.areaProperties().area
-        if area > largest_area:
-            largest_area = area
-            plate_profile = profile
-    extrudes = root.features.extrudeFeatures
-    extrude_input = extrudes.createInput(
-        plate_profile,
-        adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
-    )
-    extrude_input.setDistanceExtent(False, adsk.core.ValueInput.createByString("5 mm"))
-    feature = extrudes.add(extrude_input)
-    feature.name = "Codex_Mounting_Plate_Extrude"
-    feature.bodies.item(0).name = "Codex_Mounting_Plate"
-    print("Created 100 x 60 x 5 mm mounting plate with four M6 holes at 10 mm offsets")
-'''
+    return {
+        "name": "MountingPlate",
+        "parameter_prefix": "plate",
+        "width_expression": "100 mm",
+        "height_expression": "60 mm",
+        "thickness_expression": "5 mm",
+        "holes": [
+            {"key": "lower_left", "x_expression": "-40 mm", "y_expression": "-20 mm", "diameter_expression": "6 mm"},
+            {"key": "upper_left", "x_expression": "-40 mm", "y_expression": "20 mm", "diameter_expression": "6 mm"},
+            {"key": "lower_right", "x_expression": "40 mm", "y_expression": "-20 mm", "diameter_expression": "6 mm"},
+            {"key": "upper_right", "x_expression": "40 mm", "y_expression": "20 mm", "diameter_expression": "6 mm"},
+        ],
+        "edge_finish": {"type": "fillet", "size_expression": "3 mm"},
+    }
 
 
 def dimensions_match(actual, expected=EXPECTED_PLATE_MM, tolerance=0.01):
@@ -76,6 +59,22 @@ def summarize_tool_result(result):
         if content.get("type") == "image" and "data" in content:
             content["data"] = "[IMAGE_DATA_REMOVED]"
     return summary
+
+
+def structured(result):
+    """Return structured MCP data while accepting already-unwrapped responses."""
+
+    if not isinstance(result, dict):
+        return {}
+    return result.get("structuredContent", result)
+
+
+def find_body(context, name):
+    for component in context.get("components", []):
+        for body in component.get("bodies", []):
+            if body.get("name") == name:
+                return body
+    return None
 
 
 class MCPClient:
@@ -147,10 +146,11 @@ def run_acceptance(url, token, export_dir, include_approval_gate=True):
         )
 
         status = client.tool("get_fusion_status")
+        status_data = structured(status)
         _record(
             steps,
             "fusion_status",
-            bool(status.get("fusion_available") and status.get("active_design")),
+            bool(status_data.get("fusion_available") and status_data.get("active_design")),
             status,
         )
 
@@ -158,22 +158,43 @@ def run_acceptance(url, token, export_dir, include_approval_gate=True):
         _record(steps, "design_context_before", not context_before.get("isError", False), context_before)
 
         execution = client.tool(
-            "execute_fusion_python",
-            {
-                "intent": "100×60×5 mm 장착판과 모서리 10 mm 오프셋의 M6 구멍 4개 생성",
-                "code": build_mounting_plate_code(),
-                "expected_changes": {"bodies_created": 1, "sketches_created": 1, "features_created": 1},
-            },
+            "create_parametric_plate",
+            build_parametric_plate_arguments(),
         )
-        bodies = execution.get("after", {}).get("bodies", [])
-        plate = next((body for body in bodies if body.get("name") == "Codex_Mounting_Plate"), None)
+        execution_data = structured(execution)
+        context_created = client.tool("get_design_context", {"scope": "all", "limit": 300})
+        context_created_data = structured(context_created)
+        plate = find_body(context_created_data, "MountingPlate")
+        parameter_names = {
+            parameter.get("name")
+            for parameter in context_created_data.get("parameters", [])
+        }
         geometry_ok = (
             not execution.get("isError", False)
-            and execution.get("verification", {}).get("expectations_met", False)
+            and execution_data.get("recomputed", False)
             and plate is not None
             and dimensions_match(plate.get("size_mm"))
+            and set(execution_data.get("parameters_created", [])) <= parameter_names
         )
         _record(steps, "mounting_plate_geometry", geometry_ok, execution)
+
+        width_update = client.tool(
+            "upsert_user_parameter",
+            {
+                "name": "plate_width",
+                "expression": "120 mm",
+                "expected_old_expression": "100 mm",
+                "comment": "create_parametric_plate:MountingPlate",
+            },
+        )
+        context_updated = client.tool("get_design_context", {"scope": "all", "limit": 300})
+        updated_plate = find_body(structured(context_updated), "MountingPlate")
+        parameter_update_ok = (
+            not width_update.get("isError", False)
+            and updated_plate is not None
+            and dimensions_match(updated_plate.get("size_mm"), [120.0, 60.0, 5.0])
+        )
+        _record(steps, "plate_width_parameter_update", parameter_update_ok, width_update)
 
         for view in ("isometric", "front", "top"):
             screenshot = client.tool(
@@ -202,18 +223,22 @@ def run_acceptance(url, token, export_dir, include_approval_gate=True):
             )
             _record(steps, f"export_{format_name}", export_ok, exported)
 
-        failure = client.tool(
-            "execute_fusion_python",
+        invalid_arguments = build_parametric_plate_arguments()
+        invalid_arguments["name"] = "InvalidPlate"
+        invalid_arguments["parameter_prefix"] = "invalid_plate"
+        invalid_arguments["holes"] = [
             {
-                "intent": "의도적 오류 격리 확인",
-                "code": "def run(context):\n    return 1 / 0",
-                "expected_changes": {},
-            },
-        )
+                "key": "outside",
+                "x_expression": "49 mm",
+                "y_expression": "0 mm",
+                "diameter_expression": "6 mm",
+            }
+        ]
+        failure = client.tool("create_parametric_plate", invalid_arguments)
         _record(
             steps,
             "error_isolation",
-            failure.get("error", {}).get("code") == "FUSION_API_ERROR",
+            failure.get("error", {}).get("code") == "PLATE_HOLE_OUT_OF_BOUNDS",
             failure,
         )
 

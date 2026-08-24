@@ -28,6 +28,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **create_linear_pattern**: Repeat a named feature along the X, Y, or Z construction axis using a count and adjacent-spacing expression
 - **create_reference_canvas**: Place a local PNG/JPEG/TIFF on XY/XZ/YZ at a calibrated physical width while preserving its aspect ratio
 - **create_orthographic_canvas_set**: Atomically place 2–3 unique principal-view images, validate their shared X/Y/Z dimensions within tolerance, and record one whole-set Undo checkpoint
+- **create_parametric_plate**: Atomically create one centered XY rectangular plate with named driving parameters, 0–32 circular through-holes, and one optional vertical-edge fillet or chamfer
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions
@@ -93,6 +94,8 @@ See [live validation status](docs/live-validation.md). A missing live run is rep
 CAD files and the add-in remain local. Prompts, MCP results, error summaries, and screenshots supplied to Codex may be sent to OpenAI's model service.
 
 For image- or drawing-based work, Codex interprets visible dimensions and geometry; the add-in does not perform OCR, automatic contour reconstruction, or perspective correction. The canvas tools read existing absolute local image paths and return only basenames and calibration metadata—not image bytes or full paths. A single image can be placed with `create_reference_canvas`; 2–3 unique XY/XZ/YZ views can be placed all-or-nothing with `create_orthographic_canvas_set`, which validates shared model dimensions before changing Fusion and removes the complete set with one checkpointed Undo.
+
+`create_parametric_plate` converts explicit dimensions into one reusable component at the root origin. Width, height, thickness, every hole's signed center X/Y and diameter, and optional edge size become user parameters such as `plate_width` and `plate_upper_left_diameter`. The first version supports a centered rectangular XY plate, 0–32 non-touching circular distance-depth through-holes, and either one vertical-edge fillet, one equal-distance vertical-edge chamfer, or no edge finish. It validates all expressions, parameter-name collisions, plate boundaries, and hole overlap before mutation; any later failure rolls the entire component and generated parameter set back.
 
 ## License
 Samples are licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](LICENSE) file for full details.

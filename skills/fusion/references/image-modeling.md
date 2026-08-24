@@ -14,9 +14,10 @@ Use this guide only when the user supplies an image, drawing, render, photo, or 
 5. Use `create_reference_canvas` for one reference image. Use `create_orthographic_canvas_set` for 2–3 distinct orthographic views with at least one stated shared dimension.
 6. Before calling the set tool, map XY to X/Y, XZ to X/Z, and YZ to Y/Z. If Codex's extracted shared dimensions disagree, report the conflicting values instead of invoking Fusion.
 7. Set each `width_expression` from a stated overall drawing width. Preserve the default aspect ratio. Use center offsets or flips only when the visible origin and orientation require them.
-8. Prefer the existing explicit Fusion tools for sketches, extrusions, holes, fillets, chamfers, patterns, and parameter edits. Use source-aware names such as `Front_Profile` or `Top_Hole_Row`.
-9. Verify numeric context first. Then capture every supplied top, front, or right viewport and compare proportions, placement, and repeated features with the corresponding reference. If any view or shared dimension is wrong, use one Undo to remove the complete canvas set before retrying.
-10. Report stated dimensions as exact only when Fusion measurements agree. Label estimates as estimates, and do not claim perspective-distorted or dimensionless geometry is exact.
+8. When the drawing describes a rectangular plate, bracket base, or mounting plate with circular through-holes and at most one outer fillet or chamfer, call `create_parametric_plate` with only the structured dimensions after canvas and shared-dimension verification. The tool does not receive the image or its path.
+9. For other geometry, prefer the existing explicit Fusion tools for sketches, extrusions, holes, fillets, chamfers, patterns, and parameter edits. Use source-aware names such as `Front_Profile` or `Top_Hole_Row`.
+10. Verify numeric context first. Then capture every supplied top, front, or right viewport and compare proportions, placement, and repeated features with the corresponding reference. If any view or shared dimension is wrong, use one Undo to remove the complete canvas set before retrying.
+11. Report stated dimensions as exact only when Fusion measurements agree. Label estimates as estimates, and do not claim perspective-distorted or dimensionless geometry is exact.
 
 ## Boundaries
 

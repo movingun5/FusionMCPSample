@@ -113,6 +113,12 @@ Place an existing absolute local PNG, JPEG, or TIFF image on the active componen
 
 Place 2–3 existing orthographic PNG, JPEG, or TIFF images on unique XY, XZ, or YZ construction planes. XY contributes X/Y, XZ contributes X/Z, and YZ contributes Y/Z; every shared dimension must agree within `dimension_tolerance_mm` before Fusion is changed. All inputs are prepared first, all canvases are created in one transaction, and one checkpointed Undo removes the whole set. Results and audit records contain basenames and calibration metadata only. This tool does not perform OCR, contour tracing, perspective correction, or image reconstruction.
 
+### create_parametric_plate
+
+Create one complete rectangular plate component centered on the root XY origin and extruded in +Z. Supply `name`, a safe `parameter_prefix`, and width, height, and thickness expressions. Add 0–32 strict circular-hole objects with a unique key, signed X/Y expressions measured from the plate center, and a diameter expression. Optionally choose exactly one vertical-edge `fillet` or `chamfer` with a size expression.
+
+The tool generates user parameters `<prefix>_width`, `<prefix>_height`, `<prefix>_thickness`, `<prefix>_<hole-key>_x`, `_y`, `_diameter`, and optional `<prefix>_edge_size`. These parameters drive the profile, extrusion, hole positions and diameters, and edge feature. All expressions, generated-name conflicts, plate boundaries, and hole overlap are checked before Fusion changes. Component, parameters, sketches, body, holes, and edge finish are committed as one operation; a failed write is rolled back and one checkpointed Undo removes the whole successful part. The first version does not support slots, pockets, threaded/counterbored/countersunk holes, non-rectangular outlines, arbitrary placement, multiple bodies, or combined fillet and chamfer.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.

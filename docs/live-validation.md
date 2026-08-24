@@ -142,6 +142,10 @@ After installing server 2.1.0 and fully restarting Fusion, `get_fusion_status` r
 
 The already-open Codex task retained its pre-2.1 typed-tool cache, so the new set creation used the authenticated MCP `tools/call` endpoint after confirming server registration. This live run validates two-view XY/XZ calibration, shared-X validation, atomic creation, context serialization, visual placement, and whole-set Undo. It deliberately reuses one synthetic image to isolate placement mechanics; three-view YZ behavior and modeling from distinct real drawings remain separate live scope.
 
+## Server 2.2.0 parametric plate status
+
+**Not run; Fusion and Codex restart required.** The complete automated suite passed **193 tests** and covers the strict `create_parametric_plate` schema, pure expression and geometry validation, named parameter dependencies, rectangular plate construction, 0–32 holes, vertical fillet/chamfer selection, transaction failure rollback, checkpoint recording, and exact-target whole-part Undo. No live claim is made yet for the installed server 2.2.0 catalog, measured Fusion geometry, parameter propagation, screenshots, failed-request deltas, native Undo, or Redo.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
