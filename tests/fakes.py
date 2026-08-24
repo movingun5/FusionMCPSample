@@ -50,8 +50,12 @@ class FakeSketchPoint:
 
 class FakeSketchLine:
     def __init__(self, start, end):
-        self.startSketchPoint = FakeSketchPoint(start)
-        self.endSketchPoint = FakeSketchPoint(end)
+        self.startSketchPoint = (
+            start if isinstance(start, FakeSketchPoint) else FakeSketchPoint(start)
+        )
+        self.endSketchPoint = (
+            end if isinstance(end, FakeSketchPoint) else FakeSketchPoint(end)
+        )
 
 
 class FakeSketchLines(FakeCollection):
@@ -78,6 +82,16 @@ class FakeSketchLines(FakeCollection):
         ]
         self.sketch.profiles = FakeCollection([object()])
         return self
+
+    def addByTwoPoints(self, start, end):
+        line = FakeSketchLine(start, end)
+        self._items.append(line)
+        if (
+            len(self._items) >= 3
+            and self._items[-1].endSketchPoint is self._items[0].startSketchPoint
+        ):
+            self.sketch.profiles = FakeCollection([object()])
+        return line
 
 
 class FakeSketchCurves:
