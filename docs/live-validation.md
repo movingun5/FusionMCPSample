@@ -9,7 +9,7 @@
 - Live constant-radius fillet status: **passed on Fusion 2704.1.53**
 - Live equal-distance chamfer status: **passed on Fusion 2704.1.53**
 - Live single-direction feature-pattern status: **passed on Fusion 2704.1.53**
-- Live feature-owned model-parameter update status: **not run; restart required for server 1.9.0**
+- Live feature-owned model-parameter update status: **passed on Fusion 2704.1.53**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -102,6 +102,18 @@ After a full Fusion restart, the installed add-in exposed `create_linear_pattern
 
 The validation plate and seed hole remain only in the disposable unsaved document. The linear pattern itself was removed by Undo.
 
+## Live feature-owned model-parameter evidence
+
+After a full Fusion and Codex restart, the installed add-in exposed `update_model_parameter`, included `model_parameters` in design context, and reported server version `1.9.0`. Against a new unsaved blank design, the validation sequence was:
+
+1. Create `Codex_Model_Param_Rectangle_1_9` at `40 × 30 mm` and extrude it as `Codex_Model_Param_Extrusion_1_9` at `10 mm`.
+2. Confirm `Body1` measured `40 × 30 × 10 mm`, had `12.0 cm³` volume, and the extrusion exposed model parameter `d3` with role `AlongDistance` and expression `10 mm`.
+3. Call `update_model_parameter` with the exact feature name, role `AlongDistance`, expression `15 mm`, and `expected_old_expression = "10 mm"`.
+4. Confirm `d3 = 15 mm`, the body measured `40 × 30 × 15 mm`, volume increased to `18.0 cm³`, and the isometric capture showed the increased height.
+5. Call `undo_last_execution` and confirm `d3 = 10 mm`, the body returned to `40 × 30 × 10 mm`, volume returned to `12.0 cm³`, and the final isometric capture matched the original height.
+
+The validation rectangle and extrusion remain only in the disposable unsaved document at the restored `10 mm` height. The test did not save or modify an existing user design.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -121,4 +133,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that live feature-owned model-parameter updates, the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, or body patterns have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, viewport screenshots, and one-step Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
