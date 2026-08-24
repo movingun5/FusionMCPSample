@@ -1,6 +1,6 @@
 # Live Fusion validation status
 
-- Date: 2026-08-24
+- Date: 2026-08-25
 - Automated environment: Windows, Python 3.14, Fusion API replaced by test fakes
 - Live Fusion user-parameter status: **passed on Fusion 2704.1.53**
 - Live rectangle-sketch status: **passed on Fusion 2704.1.53**
@@ -13,7 +13,7 @@
 - Live calibrated reference-canvas status: **passed on Fusion 2704.1.53 with server 2.0.0**
 - Live orthographic canvas-set status: **passed on Fusion 2704.1.53 with server 2.1.0**
 - Live parametric-plate status: **passed on Fusion 2704.1.53 with server 2.2.0; MCP Redo not exposed**
-- Live parametric-profile-extrusion status: **not yet run; server 2.3.0 restart required**
+- Live parametric-profile-extrusion status: **passed on Fusion 2704.1.53 with server 2.3.0**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **passed**
 
@@ -21,7 +21,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **227 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds a 22-tool registry and unit coverage for strict straight-profile validation, Part and Hybrid routing, parameter-driven vertex geometry, failure rollback, exact profile Undo, deterministic 1200×800 Top/Front drawing fixtures, and a path/token/image-redacted explicit-tool live harness. Live server 2.3.0 validation remains pending a Fusion restart. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
+Current result: **230 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds a 22-tool registry and unit coverage for strict straight-profile validation, Part and Hybrid routing, parameter-driven vertex geometry, repeated-axis and signed-coordinate seeding, failure rollback, exact profile Undo, deterministic 1200×800 Top/Front drawing fixtures, and a path/token/image-redacted explicit-tool live harness. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
 
 Run:
 
@@ -159,6 +159,20 @@ After installing the compatibility patch and fully restarting Fusion 2704.1.53, 
 
 The explicit MCP Undo path is live-verified for both a user-parameter edit and a complete root-part plate. There is no explicit MCP Redo tool in server 2.2.0, so Redo was not invoked through arbitrary Python or claimed as verified.
 
+## Live server 2.3.0 parametric-profile evidence
+
+After installing the signed-coordinate seeding fix and fully restarting Fusion 2704.1.53, the authenticated server reported 2.3.0 and exposed all 22 tools including `create_parametric_profile_extrusion`. Against a new unsaved Part Design document, the explicit-tool harness completed 15 of 15 checks:
+
+1. Validate two distinct deterministic 1200 × 800 drawing fixtures, then create one atomic `LReference` canvas set from `profile-l-top.png` on XY and `profile-l-front.png` on XZ. Both views calibrated X to `100.0 mm`; the shared-dimension check reported a `0.0 mm` difference against the `0.01 mm` tolerance.
+2. Create `LProfile` from six named, parameter-driven XY vertices and an `8 mm` +Z depth. Fusion recomputed one solid with bounds `[-50, -30, 0]` to `[50, 30, 8] mm`, exact size `100 × 60 × 8 mm`, profile area `4200 mm²`, and volume `33.6 cm³`.
+3. Confirm the generated parameter order: one depth parameter followed by X/Y parameters for vertices `p1` through `p6`. Negative coordinates remained on the negative side of the origin while unique temporary positions prevented repeated-axis inference from collapsing the sketch.
+4. Capture 768 × 768 top, front, and isometric PNG viewport images. The harness confirmed that each requested image payload was returned; numeric body bounds and volume supplied the independent geometry acceptance evidence.
+5. Export the model to an accessible Documents directory. Fusion verified a non-empty 11,343-byte STEP file and a non-empty 1,084-byte STL file.
+6. Submit a bow-tie outline and confirm the structured `PROFILE_SELF_INTERSECTION` refusal occurred before mutation.
+7. Call `undo_last_execution` once and confirm the exact profile body, sketch, feature, and 13 generated parameters were removed while both reference canvases remained. Final counts were one component, zero bodies, zero sketches, zero features, zero user parameters, and two canvases.
+
+The generated `docs/live-profile-validation-result.json` report removes bearer tokens, absolute local paths, and base64 image payloads and is intentionally ignored by Git.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -180,4 +194,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, calibrated XY reference canvases, atomic two-view XY/XZ canvas sets, viewport screenshots, checkpoint-targeted single-canvas Undo, whole-set Undo, the complete explicit mounting-plate scenario, parameter propagation, isolated failure behavior, whole-part Undo, and STEP/STL exports to an accessible Documents path are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that a newly created Codex task refreshes the typed tool catalog, three-view or YZ canvas sets, modeling from distinct real drawings, multiple-view image reconstruction, automatic OCR or contour tracing, MCP Redo, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, calibrated XY reference canvases, atomic two-view XY/XZ canvas sets, viewport screenshots, checkpoint-targeted single-canvas Undo, whole-set Undo, the complete explicit mounting-plate scenario, a six-vertex parameter-driven L-profile from two distinct synthetic drawings, structured self-intersection rejection, parameter propagation, isolated failure behavior, whole-part/profile Undo, and STEP/STL exports to an accessible Documents path are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that a newly created Codex task refreshes the typed tool catalog, three-view or YZ canvas sets, modeling from distinct real drawings, multiple-view image reconstruction, automatic OCR or contour tracing, MCP Redo, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
