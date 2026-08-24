@@ -196,7 +196,15 @@ def _find_checkpoint_entity(design, token):
     return matches[0] if len(matches) == 1 else None
 
 
-def _undo_parametric_root_part(app, design, document, checkpoint):
+def _undo_parametric_root_part(
+    app,
+    design,
+    document,
+    checkpoint,
+    *,
+    transaction_label="Codex Undo Parametric Root Part",
+    undo_mode="parametric_root_part_deleted",
+):
     root = safe_value(design, "rootComponent")
     component_token = checkpoint.get("component_entity_token")
     body_token = checkpoint.get("body_entity_token")
@@ -241,7 +249,7 @@ def _undo_parametric_root_part(app, design, document, checkpoint):
     transaction_started = False
     try:
         if document is not None:
-            app.executeTextCommand('PTransaction.Start "Codex Undo Parametric Root Part"')
+            app.executeTextCommand(f'PTransaction.Start "{transaction_label}"')
             transaction_started = True
         for feature in reversed(features):
             if feature.deleteMe() is False:
@@ -264,7 +272,7 @@ def _undo_parametric_root_part(app, design, document, checkpoint):
             "isError": False,
             "message": "The most recent Codex root-part parametric plate was removed.",
             "undone_request_id": checkpoint.get("request_id"),
-            "undo_mode": "parametric_root_part_deleted",
+            "undo_mode": undo_mode,
             "restored_counts": counts,
             "content": [
                 {
@@ -282,9 +290,26 @@ def _undo_parametric_root_part(app, design, document, checkpoint):
         )
 
 
-def _undo_parametric_plate(app, design, document, checkpoint):
+def _undo_parametric_plate(
+    app,
+    design,
+    document,
+    checkpoint,
+    *,
+    transaction_label="Codex Undo Parametric Plate",
+    undo_mode="parametric_plate_deleted",
+    root_transaction_label="Codex Undo Parametric Root Part",
+    root_undo_mode="parametric_root_part_deleted",
+):
     if checkpoint.get("container_mode") == "root_part":
-        return _undo_parametric_root_part(app, design, document, checkpoint)
+        return _undo_parametric_root_part(
+            app,
+            design,
+            document,
+            checkpoint,
+            transaction_label=root_transaction_label,
+            undo_mode=root_undo_mode,
+        )
 
     root = safe_value(design, "rootComponent")
     occurrences = safe_value(root, "occurrences")
@@ -334,7 +359,7 @@ def _undo_parametric_plate(app, design, document, checkpoint):
     transaction_started = False
     try:
         if document is not None:
-            app.executeTextCommand('PTransaction.Start "Codex Undo Parametric Plate"')
+            app.executeTextCommand(f'PTransaction.Start "{transaction_label}"')
             transaction_started = True
         if occurrence.deleteMe() is False:
             raise RuntimeError("Fusion rejected the plate occurrence deletion.")
@@ -353,7 +378,7 @@ def _undo_parametric_plate(app, design, document, checkpoint):
             "isError": False,
             "message": "The most recent Codex parametric plate was removed.",
             "undone_request_id": checkpoint.get("request_id"),
-            "undo_mode": "parametric_plate_deleted",
+            "undo_mode": undo_mode,
             "restored_counts": counts,
             "content": [
                 {
@@ -369,6 +394,19 @@ def _undo_parametric_plate(app, design, document, checkpoint):
             "Fusion could not remove the checkpoint parametric plate.",
             retryable=True,
         )
+
+
+def _undo_parametric_profile(app, design, document, checkpoint):
+    return _undo_parametric_plate(
+        app,
+        design,
+        document,
+        checkpoint,
+        transaction_label="Codex Undo Parametric Profile",
+        undo_mode="parametric_profile_deleted",
+        root_transaction_label="Codex Undo Parametric Profile",
+        root_undo_mode="parametric_profile_deleted",
+    )
 
 
 def undo_with(app, checkpoint):
@@ -391,6 +429,8 @@ def undo_with(app, checkpoint):
     if design is None:
         return MCPError("NO_ACTIVE_DESIGN", "Open the checkpoint design first.", True).to_result()
 
+    if checkpoint.get("mutation") == "create_parametric_profile_extrusion":
+        return _undo_parametric_profile(app, design, document, checkpoint)
     if checkpoint.get("mutation") == "create_parametric_plate":
         return _undo_parametric_plate(app, design, document, checkpoint)
     if checkpoint.get("mutation") == "create_orthographic_canvas_set":

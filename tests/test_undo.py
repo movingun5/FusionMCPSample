@@ -277,6 +277,124 @@ class UndoTests(unittest.TestCase):
         self.assertEqual(0, root.features.count)
         self.assertEqual(0, self.design.userParameters.count)
 
+    def test_undo_parametric_profile_deletes_exact_child_component_and_parameters(self):
+        root = self.design.rootComponent
+        root.occurrences = FakeOccurrences(
+            component_factory=lambda: FakeComponent("LProfile", "component-profile")
+        )
+        occurrence = root.occurrences.addNewComponent(object())
+        depth = self.design.userParameters.add("l_profile_depth", "8 mm", "mm", "profile")
+        checkpoint = {
+            "document_id": self.design.parentDocument.id,
+            "request_id": "request-profile",
+            "mutation": "create_parametric_profile_extrusion",
+            "container_mode": "child_component",
+            "occurrence_entity_token": occurrence.entityToken,
+            "component_entity_token": occurrence.component.entityToken,
+            "body_entity_token": "profile-body",
+            "feature_entity_tokens": ["profile-extrusion"],
+            "sketch_entity_tokens": ["profile-sketch"],
+            "parameter_names": [depth.name],
+            "starting_counts": {
+                "components": 1,
+                "bodies": 0,
+                "sketches": 0,
+                "features": 0,
+                "user_parameters": 0,
+            },
+        }
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertFalse(result["isError"])
+        self.assertEqual("parametric_profile_deleted", result["undo_mode"])
+        self.assertEqual(0, root.occurrences.count)
+        self.assertEqual(0, self.design.userParameters.count)
+        self.assertEqual(
+            [
+                'PTransaction.Start "Codex Undo Parametric Profile"',
+                "PTransaction.Commit",
+            ],
+            self.app.commands,
+        )
+
+    def test_undo_root_profile_preserves_unrelated_body_and_deletes_exact_targets(self):
+        class ActiveCollection(FakeCollection):
+            @property
+            def count(self):
+                return len([item for item in self._items if not item.deleted])
+
+            def item(self, index):
+                return [item for item in self._items if not item.deleted][index]
+
+            def __iter__(self):
+                return iter([item for item in self._items if not item.deleted])
+
+        class Entity:
+            def __init__(self, name, token, on_delete=None):
+                self.name = name
+                self.entityToken = token
+                self.deleted = False
+                self.healthState = "HealthyFeatureHealthState"
+                self.errorOrWarningMessage = ""
+                self.on_delete = on_delete
+
+            def deleteMe(self):
+                self.deleted = True
+                if self.on_delete is not None:
+                    self.on_delete()
+                return True
+
+        root = self.design.rootComponent
+        profile_body = Entity("LProfile", "profile-body")
+        unrelated_body = Entity("Existing", "existing-body")
+        sketch = Entity("LProfile_Profile", "profile-sketch")
+        extrusion = Entity(
+            "LProfile_Extrusion",
+            "profile-extrusion",
+            on_delete=profile_body.deleteMe,
+        )
+        root.bRepBodies = ActiveCollection([unrelated_body, profile_body])
+        root.sketches = ActiveCollection([sketch])
+        root.features = ActiveCollection([extrusion])
+        depth = self.design.userParameters.add("l_profile_depth", "8 mm", "mm", "profile")
+        entities = {
+            entity.entityToken: entity
+            for entity in (profile_body, unrelated_body, sketch, extrusion)
+        }
+        self.design.findEntityByToken = lambda token: (
+            [entities[token]] if token in entities and not entities[token].deleted else []
+        )
+        checkpoint = {
+            "document_id": self.design.parentDocument.id,
+            "request_id": "request-root-profile",
+            "mutation": "create_parametric_profile_extrusion",
+            "container_mode": "root_part",
+            "occurrence_entity_token": None,
+            "component_entity_token": root.entityToken,
+            "body_entity_token": profile_body.entityToken,
+            "feature_entity_tokens": [extrusion.entityToken],
+            "sketch_entity_tokens": [sketch.entityToken],
+            "parameter_names": [depth.name],
+            "starting_counts": {
+                "components": 1,
+                "bodies": 1,
+                "sketches": 0,
+                "features": 0,
+                "user_parameters": 0,
+            },
+        }
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertFalse(result["isError"])
+        self.assertEqual("parametric_profile_deleted", result["undo_mode"])
+        self.assertFalse(unrelated_body.deleted)
+        self.assertEqual(1, root.bRepBodies.count)
+        self.assertEqual(0, root.sketches.count)
+        self.assertEqual(0, root.features.count)
+        self.assertEqual(0, self.design.userParameters.count)
+
 
 if __name__ == "__main__":
     unittest.main()
