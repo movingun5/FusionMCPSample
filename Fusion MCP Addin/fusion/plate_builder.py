@@ -31,6 +31,7 @@ class FusionPlateBuilder:
         dimension_orientations=None,
         new_body_operation=None,
         object_collection_factory=None,
+        part_design_intent=None,
     ):
         self.design = design
         self.root = root
@@ -40,8 +41,10 @@ class FusionPlateBuilder:
         self.dimension_orientations = dimension_orientations
         self.new_body_operation = new_body_operation
         self.object_collection_factory = object_collection_factory
+        self.part_design_intent = part_design_intent
         self.occurrence = None
         self.component = None
+        self.container_mode = None
         self.parameters = []
         self._rolled_back = False
 
@@ -53,6 +56,7 @@ class FusionPlateBuilder:
             and self.dimension_orientations is not None
             and self.new_body_operation is not None
             and self.object_collection_factory is not None
+            and self.part_design_intent is not None
         ):
             return
 
@@ -76,12 +80,22 @@ class FusionPlateBuilder:
         self.object_collection_factory = (
             self.object_collection_factory or adsk.core.ObjectCollection.create
         )
+        self.part_design_intent = (
+            self.part_design_intent
+            if self.part_design_intent is not None
+            else adsk.fusion.DesignIntentTypes.PartDesignIntentType
+        )
 
     @staticmethod
     def _failure(stage, code, message):
         raise PlateBuildFailure(stage, code, message)
 
     def _create_component(self, name):
+        if safe_value(self.design, "designIntent") == self.part_design_intent:
+            self.component = self.root
+            self.container_mode = "root_part"
+            return None, self.root
+
         occurrences = safe_value(self.root, "occurrences")
         add_new = safe_value(occurrences, "addNewComponent")
         if not callable(add_new):
@@ -107,6 +121,7 @@ class FusionPlateBuilder:
             )
         self.occurrence = occurrence
         self.component = component
+        self.container_mode = "child_component"
         component.name = name
         return occurrence, component
 
@@ -417,6 +432,7 @@ class FusionPlateBuilder:
         return {
             "occurrence": occurrence,
             "component": component,
+            "container_mode": self.container_mode,
             "body": body,
             "profile_sketch": profile,
             "profile_dimensions": profile_dimensions,

@@ -187,7 +187,12 @@ def create_parametric_plate(
         comparison = compare_snapshots(
             before_snapshot,
             after_snapshot,
-            expected={"components_created": 1, "bodies_created": 1},
+            expected={
+                "components_created": (
+                    0 if created["container_mode"] == "root_part" else 1
+                ),
+                "bodies_created": 1,
+            },
         )
         if not comparison["expectations_met"]:
             raise PlateBuildFailure(
@@ -206,10 +211,27 @@ def create_parametric_plate(
         checkpoint = {
             "request_id": request_id,
             "mutation": "create_parametric_plate",
+            "container_mode": created["container_mode"],
             "document_id": document_id,
             "timeline_marker": timeline_marker,
             "occurrence_entity_token": entity_token(created["occurrence"]),
             "component_entity_token": entity_token(created["component"]),
+            "body_entity_token": entity_token(created["body"]),
+            "feature_entity_tokens": [
+                entity_token(feature)
+                for feature in (
+                    [created["extrusion"]]
+                    + list(created["hole_features"])
+                    + ([created["edge_feature"]] if created["edge_feature"] is not None else [])
+                )
+            ],
+            "sketch_entity_tokens": [
+                entity_token(sketch)
+                for sketch in (
+                    [created["profile_sketch"]]
+                    + ([created["hole_sketch"]] if created["hole_sketch"] is not None else [])
+                )
+            ],
             "parameter_names": generated_names,
             "starting_counts": starting_counts,
             "created_counts": created_delta,
@@ -234,6 +256,7 @@ def create_parametric_plate(
 
         payload = {
             "action": "created",
+            "container_mode": created["container_mode"],
             "component": safe_value(created["component"], "name", normalized["name"]),
             "component_entity_token": entity_token(created["component"]),
             "body": safe_value(created["body"], "name", normalized["name"]),

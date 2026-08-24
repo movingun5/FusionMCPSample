@@ -1,10 +1,15 @@
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from scripts.live_acceptance import (
     EXPECTED_PLATE_MM,
+    REQUIRED_TOOLS,
     build_parametric_plate_arguments,
     dimensions_match,
+    run_acceptance,
     summarize_tool_result,
 )
 
@@ -39,6 +44,50 @@ class LiveAcceptanceHarnessTests(unittest.TestCase):
 
         self.assertNotIn("very-large-base64", repr(summary))
         self.assertEqual("[IMAGE_DATA_REMOVED]", summary["content"][0]["data"])
+
+    def test_creation_failure_stops_dependent_parameter_export_and_image_steps(self):
+        class FailedCreationClient:
+            instances = []
+
+            def __init__(self, *_args, **_kwargs):
+                self.tool_calls = []
+                self.__class__.instances.append(self)
+
+            def call(self, method, _params=None):
+                if method == "initialize":
+                    return {"serverInfo": {"name": "test"}}
+                if method == "tools/list":
+                    return {"tools": [{"name": name} for name in REQUIRED_TOOLS]}
+                raise AssertionError(method)
+
+            def tool(self, name, _arguments=None):
+                self.tool_calls.append(name)
+                if name == "get_fusion_status":
+                    return {"structuredContent": {"fusion_available": True, "active_design": True}}
+                if name == "get_design_context":
+                    return {"structuredContent": {"components": [], "parameters": []}}
+                if name == "create_parametric_plate":
+                    return {
+                        "isError": True,
+                        "error": {"code": "PLATE_COMPONENT_WRITE_FAILED"},
+                    }
+                return {"isError": False}
+
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("scripts.live_acceptance.MCPClient", FailedCreationClient):
+                report = run_acceptance(
+                    "http://127.0.0.1:9100/",
+                    "test-token",
+                    Path(directory),
+                    include_approval_gate=False,
+                )
+
+        calls = FailedCreationClient.instances[-1].tool_calls
+        self.assertFalse(report["ok"])
+        self.assertIn("create_parametric_plate", calls)
+        self.assertNotIn("upsert_user_parameter", calls)
+        self.assertNotIn("get_viewport_screenshot", calls)
+        self.assertNotIn("export_design", calls)
 
 
 if __name__ == "__main__":

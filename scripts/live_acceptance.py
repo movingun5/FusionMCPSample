@@ -117,6 +117,10 @@ class MCPClient:
         return self.call("tools/call", {"name": name, "arguments": arguments or {}})
 
 
+class _AcceptanceStopped(RuntimeError):
+    """Stop dependent acceptance steps after a recorded prerequisite failure."""
+
+
 def _record(steps, name, ok, details=None):
     steps.append({"name": name, "ok": bool(ok), "details": summarize_tool_result(details or {})})
     return ok
@@ -177,6 +181,8 @@ def run_acceptance(url, token, export_dir, include_approval_gate=True):
             and set(execution_data.get("parameters_created", [])) <= parameter_names
         )
         _record(steps, "mounting_plate_geometry", geometry_ok, execution)
+        if not geometry_ok:
+            raise _AcceptanceStopped()
 
         width_update = client.tool(
             "upsert_user_parameter",
@@ -262,6 +268,8 @@ def run_acceptance(url, token, export_dir, include_approval_gate=True):
                 gated.get("error", {}).get("code") == "POLICY_APPROVAL_REQUIRED",
                 gated,
             )
+    except _AcceptanceStopped:
+        pass
     except (RuntimeError, URLError, TimeoutError, OSError, ValueError) as error:
         _record(steps, "harness_exception", False, {"type": type(error).__name__, "message": str(error)})
 

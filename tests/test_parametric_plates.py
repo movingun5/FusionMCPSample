@@ -8,7 +8,7 @@ from fusion_mcp_addin.fusion.checkpoints import clear_last_checkpoint, get_last_
 from fusion_mcp_addin.fusion.parametric_plates import create_parametric_plate
 from fusion_mcp_addin.fusion.plate_builder import FusionPlateBuilder
 from tests.fakes import FakeApp, FakeComponent, FakeDesign, FakeOccurrences, FakePoint
-from tests.test_plate_builder import _ObjectCollection, _component_factory
+from tests.test_plate_builder import _Features, _ObjectCollection, _component_factory
 
 
 class ParametricPlateTests(unittest.TestCase):
@@ -38,6 +38,21 @@ class ParametricPlateTests(unittest.TestCase):
             dimension_orientations={"horizontal": "horizontal", "vertical": "vertical"},
             new_body_operation="new-body",
             object_collection_factory=_ObjectCollection,
+            part_design_intent="PartDesignIntentType",
+        )
+
+    @staticmethod
+    def part_builder_factory(design, root):
+        return FusionPlateBuilder(
+            design,
+            root,
+            point_factory=FakePoint,
+            matrix_factory=lambda: object(),
+            value_input_factory=lambda expression: expression,
+            dimension_orientations={"horizontal": "horizontal", "vertical": "vertical"},
+            new_body_operation="new-body",
+            object_collection_factory=_ObjectCollection,
+            part_design_intent="PartDesignIntentType",
         )
 
     def arguments(self):
@@ -90,6 +105,23 @@ class ParametricPlateTests(unittest.TestCase):
         self.assertEqual("create_parametric_plate", checkpoint["mutation"])
         self.assertEqual("occurrence-1", checkpoint["occurrence_entity_token"])
         self.assertEqual(16, len(checkpoint["parameter_names"]))
+
+    def test_part_design_uses_root_component_and_records_exact_entities(self):
+        self.design.designIntent = "PartDesignIntentType"
+        self.root.features = _Features(self.root)
+
+        result = self.create(builder_factory=self.part_builder_factory)
+        content = result["structuredContent"]
+        checkpoint = get_last_checkpoint()
+
+        self.assertFalse(result["isError"])
+        self.assertEqual("root_part", content["container_mode"])
+        self.assertEqual("root_part", checkpoint["container_mode"])
+        self.assertIsNone(checkpoint["occurrence_entity_token"])
+        self.assertEqual("body-1", checkpoint["body_entity_token"])
+        self.assertEqual(6, len(checkpoint["feature_entity_tokens"]))
+        self.assertEqual(2, len(checkpoint["sketch_entity_tokens"]))
+        self.assertEqual(0, self.root.occurrences.count)
 
     def test_rejects_parameter_collisions_before_transaction(self):
         self.design.userParameters.add("plate_width", "80 mm", "mm", "existing")

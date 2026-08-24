@@ -144,7 +144,9 @@ The already-open Codex task retained its pre-2.1 typed-tool cache, so the new se
 
 ## Server 2.2.0 parametric plate status
 
-**Not run; Fusion and Codex restart required.** The complete automated suite passed **193 tests** and covers the strict `create_parametric_plate` schema, pure expression and geometry validation, named parameter dependencies, rectangular plate construction, 0–32 holes, vertical fillet/chamfer selection, transaction failure rollback, checkpoint recording, and exact-target whole-part Undo. No live claim is made yet for the installed server 2.2.0 catalog, measured Fusion geometry, parameter propagation, screenshots, failed-request deltas, native Undo, or Redo.
+**Partial; patched server restart required.** The installed server reported 2.2.0 and its live catalog exposed all 21 tools including `create_parametric_plate`. A blank Part Design document rejected the first creation at `Occurrences.addNewComponent` because Part Design permits only its single root component. The failure returned `PLATE_COMPONENT_WRITE_FAILED`, restored all geometry counts, and a later out-of-bounds request returned `PLATE_HOLE_OUT_OF_BOUNDS` without geometry mutation. The acceptance harness incorrectly continued after the failed creation and created `plate_width`; `undo_last_execution` removed that parameter and context returned to zero bodies, sketches, features, and parameters.
+
+The compatibility patch now routes Part Design to its root component, retains child-component creation for Hybrid Design, records exact root-part body/feature/sketch tokens, supports exact-target root-part Undo, and stops the live harness after a failed creation prerequisite. The complete automated suite passes **197 tests**. Measured live geometry, parameter propagation, screenshots of the plate, successful STEP/STL export, whole-part Undo, and Redo remain unverified until Fusion reloads this patch.
 
 ## Required live procedure
 

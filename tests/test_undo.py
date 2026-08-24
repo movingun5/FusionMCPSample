@@ -5,6 +5,7 @@ from fusion_mcp_addin.fusion.undo import undo_with
 from tests.fakes import (
     FakeApp,
     FakeCanvasInput,
+    FakeCollection,
     FakeComponent,
     FakeDesign,
     FakeOccurrences,
@@ -197,6 +198,84 @@ class UndoTests(unittest.TestCase):
         self.assertEqual("CHECKPOINT_ENTITY_NOT_FOUND", result["error"]["code"])
         self.assertEqual(1, root.occurrences.count)
         self.assertEqual([], self.app.commands)
+
+    def test_undo_root_part_plate_deletes_exact_features_sketches_and_parameters(self):
+        class ActiveCollection(FakeCollection):
+            @property
+            def count(self):
+                return len([item for item in self._items if not item.deleted])
+
+            def item(self, index):
+                return [item for item in self._items if not item.deleted][index]
+
+            def __iter__(self):
+                return iter([item for item in self._items if not item.deleted])
+
+        class Entity:
+            def __init__(self, name, token, on_delete=None):
+                self.name = name
+                self.entityToken = token
+                self.deleted = False
+                self.healthState = "HealthyFeatureHealthState"
+                self.errorOrWarningMessage = ""
+                self.on_delete = on_delete
+
+            def deleteMe(self):
+                self.deleted = True
+                if self.on_delete is not None:
+                    self.on_delete()
+                return True
+
+        root = self.design.rootComponent
+        body = Entity("MountingPlate", "body-part")
+        profile = Entity("MountingPlate_Profile", "sketch-profile")
+        holes = Entity("MountingPlate_Holes", "sketch-holes")
+        extrusion = Entity(
+            "MountingPlate_Extrusion",
+            "feature-extrusion",
+            on_delete=body.deleteMe,
+        )
+        hole = Entity("MountingPlate_lower_left_Hole", "feature-hole")
+        fillet = Entity("MountingPlate_Fillet", "feature-fillet")
+        root.bRepBodies = ActiveCollection([body])
+        root.sketches = ActiveCollection([profile, holes])
+        root.features = ActiveCollection([extrusion, hole, fillet])
+        width = self.design.userParameters.add("plate_width", "100 mm", "mm", "plate")
+        entities = {
+            entity.entityToken: entity
+            for entity in (body, profile, holes, extrusion, hole, fillet)
+        }
+        self.design.findEntityByToken = lambda token: (
+            [entities[token]] if token in entities and not entities[token].deleted else []
+        )
+        checkpoint = {
+            "document_id": self.design.parentDocument.id,
+            "request_id": "request-root-part",
+            "mutation": "create_parametric_plate",
+            "container_mode": "root_part",
+            "component_entity_token": root.entityToken,
+            "occurrence_entity_token": None,
+            "body_entity_token": body.entityToken,
+            "feature_entity_tokens": [extrusion.entityToken, hole.entityToken, fillet.entityToken],
+            "sketch_entity_tokens": [profile.entityToken, holes.entityToken],
+            "parameter_names": [width.name],
+            "starting_counts": {
+                "components": 1,
+                "bodies": 0,
+                "sketches": 0,
+                "features": 0,
+                "user_parameters": 0,
+            },
+        }
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertFalse(result["isError"])
+        self.assertEqual("parametric_root_part_deleted", result["undo_mode"])
+        self.assertEqual(0, root.bRepBodies.count)
+        self.assertEqual(0, root.sketches.count)
+        self.assertEqual(0, root.features.count)
+        self.assertEqual(0, self.design.userParameters.count)
 
 
 if __name__ == "__main__":

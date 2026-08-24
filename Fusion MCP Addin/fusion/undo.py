@@ -185,7 +185,107 @@ def _design_counts(design):
     return counts
 
 
+def _find_checkpoint_entity(design, token):
+    finder = safe_value(design, "findEntityByToken")
+    if not token or not callable(finder):
+        return None
+    try:
+        matches = list(finder(token) or [])
+    except Exception:
+        return None
+    return matches[0] if len(matches) == 1 else None
+
+
+def _undo_parametric_root_part(app, design, document, checkpoint):
+    root = safe_value(design, "rootComponent")
+    component_token = checkpoint.get("component_entity_token")
+    body_token = checkpoint.get("body_entity_token")
+    feature_tokens = checkpoint.get("feature_entity_tokens")
+    sketch_tokens = checkpoint.get("sketch_entity_tokens")
+    parameter_names = checkpoint.get("parameter_names")
+    if (
+        root is None
+        or entity_token(root) != component_token
+        or not body_token
+        or not isinstance(feature_tokens, list)
+        or not feature_tokens
+        or len(set(feature_tokens)) != len(feature_tokens)
+        or not isinstance(sketch_tokens, list)
+        or not sketch_tokens
+        or len(set(sketch_tokens)) != len(sketch_tokens)
+        or not isinstance(parameter_names, list)
+        or not parameter_names
+        or len(set(parameter_names)) != len(parameter_names)
+    ):
+        return _error(
+            "CHECKPOINT_ENTITY_NOT_FOUND",
+            "The root-part parametric plate checkpoint is incomplete.",
+            retryable=True,
+        )
+
+    body = _find_checkpoint_entity(design, body_token)
+    features = [_find_checkpoint_entity(design, token) for token in feature_tokens]
+    sketches = [_find_checkpoint_entity(design, token) for token in sketch_tokens]
+    user_parameters = safe_value(design, "userParameters")
+    parameters = []
+    if user_parameters is not None:
+        parameters = [user_parameters.itemByName(name) for name in parameter_names]
+    resolved = [body] + features + sketches + parameters
+    if any(entity is None for entity in resolved) or len({id(entity) for entity in resolved}) != len(resolved):
+        return _error(
+            "CHECKPOINT_ENTITY_NOT_FOUND",
+            "Every root-part plate entity in the checkpoint must still exist before Undo.",
+            retryable=True,
+        )
+
+    transaction_started = False
+    try:
+        if document is not None:
+            app.executeTextCommand('PTransaction.Start "Codex Undo Parametric Root Part"')
+            transaction_started = True
+        for feature in reversed(features):
+            if feature.deleteMe() is False:
+                raise RuntimeError("Fusion rejected a root-part feature deletion.")
+        for sketch in reversed(sketches):
+            if sketch.deleteMe() is False:
+                raise RuntimeError("Fusion rejected a root-part sketch deletion.")
+        for parameter in reversed(parameters):
+            if parameter.deleteMe() is False:
+                raise RuntimeError("Fusion rejected a generated parameter deletion.")
+        if design.computeAll() is False:
+            raise RuntimeError("Fusion could not recompute after deleting the root part plate.")
+        counts = _design_counts(design)
+        starting_counts = checkpoint.get("starting_counts")
+        if isinstance(starting_counts, dict) and counts != starting_counts:
+            raise RuntimeError("The design did not return to its root-part checkpoint counts.")
+        if transaction_started:
+            app.executeTextCommand("PTransaction.Commit")
+        return {
+            "isError": False,
+            "message": "The most recent Codex root-part parametric plate was removed.",
+            "undone_request_id": checkpoint.get("request_id"),
+            "undo_mode": "parametric_root_part_deleted",
+            "restored_counts": counts,
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Root-part plate features, sketches, and generated parameters removed; the design was recomputed.",
+                }
+            ],
+        }
+    except Exception:
+        _abort_transaction(app, transaction_started)
+        return _error(
+            "FUSION_API_ERROR",
+            "Fusion could not remove the checkpoint root-part parametric plate.",
+            retryable=True,
+        )
+
+
 def _undo_parametric_plate(app, design, document, checkpoint):
+    if checkpoint.get("container_mode") == "root_part":
+        return _undo_parametric_root_part(app, design, document, checkpoint)
+
     root = safe_value(design, "rootComponent")
     occurrences = safe_value(root, "occurrences")
     expected_occurrence_token = checkpoint.get("occurrence_entity_token")

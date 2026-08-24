@@ -272,7 +272,7 @@ class PlateBuilderTests(unittest.TestCase):
         )
         return evaluate_plate_request(request, self.design.unitsManager)
 
-    def builder(self):
+    def builder(self, *, part_design_intent="PartDesignIntentType"):
         return FusionPlateBuilder(
             self.design,
             self.root,
@@ -282,7 +282,23 @@ class PlateBuilderTests(unittest.TestCase):
             dimension_orientations={"horizontal": "horizontal", "vertical": "vertical"},
             new_body_operation="new-body",
             object_collection_factory=_ObjectCollection,
+            part_design_intent=part_design_intent,
         )
+
+    def test_builds_part_design_in_root_without_creating_occurrence(self):
+        self.design.designIntent = "PartDesignIntentType"
+        self.root.features = _Features(self.root)
+
+        result = self.builder(
+            part_design_intent="PartDesignIntentType"
+        ).build("MountingPlate", self.evaluated())
+
+        self.assertIsNone(result["occurrence"])
+        self.assertIs(self.root, result["component"])
+        self.assertEqual("root_part", result["container_mode"])
+        self.assertEqual("Root", self.root.name)
+        self.assertEqual("MountingPlate", result["body"].name)
+        self.assertEqual(0, self.root.occurrences.count)
 
     def test_builds_named_parameter_driven_four_hole_fillet_plate(self):
         result = self.builder().build("MountingPlate", self.evaluated())
