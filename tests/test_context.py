@@ -15,6 +15,12 @@ from tests.fakes import (
 )
 
 
+class _PlaneWrapper:
+    def __init__(self, name, token):
+        self.name = name
+        self.entityToken = token
+
+
 class ContextTests(unittest.TestCase):
     def setUp(self):
         body = FakeBody("Plate", "body-1", volume=30.0, maximum=(10.0, 6.0, 0.5))
@@ -72,6 +78,21 @@ class ContextTests(unittest.TestCase):
         self.assertEqual(10.0, component["canvases"][0]["height_mm"])
         self.assertEqual(65, component["canvases"][0]["opacity"])
         self.assertNotIn(r"C:\private\reference", repr(context))
+
+    def test_context_recognizes_same_plane_returned_as_a_distinct_fusion_wrapper(self):
+        root = self.design.rootComponent
+        root.xYConstructionPlane = _PlaneWrapper("XY Plane", "xy-plane-token")
+        canvas_input = FakeCanvasInput(
+            r"C:\reference\plate.png",
+            _PlaneWrapper("XY Plane", "xy-plane-token"),
+        )
+        canvas = FakeCanvas(canvas_input, "canvas-2")
+        canvas.name = "Wrapped Plane Reference"
+        root.canvases._items.append(canvas)
+
+        context = build_design_context(self.app, scope="all", limit=20)
+
+        self.assertEqual("xy", context["components"][0]["canvases"][0]["plane"])
 
     def test_context_returns_model_parameter_owner_and_role_for_edits(self):
         feature = FakeFeature("Plate Extrusion", "feature-1")

@@ -89,12 +89,21 @@ def _model_parameter_summary(parameter, component):
 
 def _canvas_plane(canvas, component):
     planar_entity = safe_value(canvas, "planarEntity")
+    planar_token = entity_token(planar_entity)
+    planar_name = str(safe_value(planar_entity, "name", "")).strip().casefold()
     for plane, attribute in (
         ("xy", "xYConstructionPlane"),
         ("xz", "xZConstructionPlane"),
         ("yz", "yZConstructionPlane"),
     ):
-        if planar_entity is safe_value(component, attribute):
+        candidate = safe_value(component, attribute)
+        candidate_token = entity_token(candidate)
+        candidate_name = str(safe_value(candidate, "name", "")).strip().casefold()
+        if planar_entity is candidate:
+            return plane
+        if planar_token and candidate_token and planar_token == candidate_token:
+            return plane
+        if planar_name and candidate_name and planar_name == candidate_name:
             return plane
     return "unknown"
 
