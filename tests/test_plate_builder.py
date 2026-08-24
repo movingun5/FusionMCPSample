@@ -306,7 +306,7 @@ class PlateBuilderTests(unittest.TestCase):
         self.assertEqual("MountingPlate", result["component"].name)
         self.assertEqual("MountingPlate", result["body"].name)
         self.assertEqual("MountingPlate_Profile", result["profile_sketch"].name)
-        self.assertEqual("MountingPlate_Holes", result["hole_sketch"].name)
+        self.assertEqual(4, len(result["hole_sketches"]))
         self.assertEqual(
             "plate_width",
             result["profile_dimensions"]["width"].parameter.expression,
@@ -333,11 +333,25 @@ class PlateBuilderTests(unittest.TestCase):
         )
         self.assertEqual(16, self.design.userParameters.count)
 
+    def test_isolates_each_hole_in_its_own_placement_sketch(self):
+        result = self.builder().build("MountingPlate", self.evaluated())
+
+        self.assertEqual(4, len(result["hole_sketches"]))
+        self.assertEqual(
+            [
+                "MountingPlate_lower_left_HolePlacement",
+                "MountingPlate_upper_left_HolePlacement",
+                "MountingPlate_lower_right_HolePlacement",
+                "MountingPlate_upper_right_HolePlacement",
+            ],
+            [sketch.name for sketch in result["hole_sketches"]],
+        )
+
     def test_builds_no_hole_plate_without_hidden_sketch_or_edge_feature(self):
         evaluated = self.evaluated(holes=[], edge_finish={"type": "none"})
         result = self.builder().build("MountingPlate", evaluated)
 
-        self.assertIsNone(result["hole_sketch"])
+        self.assertEqual([], result["hole_sketches"])
         self.assertEqual([], result["hole_features"])
         self.assertIsNone(result["edge_feature"])
         self.assertEqual(3, self.design.userParameters.count)
@@ -362,12 +376,19 @@ class PlateBuilderTests(unittest.TestCase):
         result = self.builder().build("MountingPlate", self.evaluated(holes=holes))
         expressions = [
             dimension.parameter.expression
-            for dimension in result["hole_sketch"].sketchDimensions
+            for sketch in result["hole_sketches"]
+            for dimension in sketch.sketchDimensions
         ]
 
         self.assertIn("-(plate_negative_x)", expressions)
         self.assertIn("-(plate_negative_y)", expressions)
-        self.assertEqual(1, len(result["hole_sketch"].geometricConstraints._items))
+        self.assertEqual(
+            1,
+            sum(
+                len(sketch.geometricConstraints._items)
+                for sketch in result["hole_sketches"]
+            ),
+        )
 
     def test_rolls_back_occurrence_and_parameters_after_hole_failure(self):
         self.root.occurrences = FakeOccurrences(

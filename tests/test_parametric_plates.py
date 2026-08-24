@@ -6,7 +6,7 @@ import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.core.audit import AuditLogger
 from fusion_mcp_addin.fusion.checkpoints import clear_last_checkpoint, get_last_checkpoint
 from fusion_mcp_addin.fusion.parametric_plates import create_parametric_plate
-from fusion_mcp_addin.fusion.plate_builder import FusionPlateBuilder
+from fusion_mcp_addin.fusion.plate_builder import FusionPlateBuilder, PlateBuildFailure
 from tests.fakes import FakeApp, FakeComponent, FakeDesign, FakeOccurrences, FakePoint
 from tests.test_plate_builder import _Features, _ObjectCollection, _component_factory
 
@@ -120,7 +120,7 @@ class ParametricPlateTests(unittest.TestCase):
         self.assertIsNone(checkpoint["occurrence_entity_token"])
         self.assertEqual("body-1", checkpoint["body_entity_token"])
         self.assertEqual(6, len(checkpoint["feature_entity_tokens"]))
-        self.assertEqual(2, len(checkpoint["sketch_entity_tokens"]))
+        self.assertEqual(5, len(checkpoint["sketch_entity_tokens"]))
         self.assertEqual(0, self.root.occurrences.count)
 
     def test_rejects_parameter_collisions_before_transaction(self):
@@ -165,6 +165,51 @@ class ParametricPlateTests(unittest.TestCase):
         audit_text = self.audit.path.read_text(encoding="utf-8")
         self.assertIn("local_traceback", audit_text)
         self.assertNotIn("local_traceback", repr(result))
+
+    def test_transaction_restoration_wins_over_invalid_post_abort_handles(self):
+        design = self.design
+
+        class Builder:
+            def __init__(self, _design, _root):
+                self.parameter = None
+
+            def build(self, _name, _evaluated):
+                self.parameter = design.userParameters.add(
+                    "temporary_plate_parameter",
+                    "1 mm",
+                    "mm",
+                    "temporary",
+                )
+                raise PlateBuildFailure(
+                    "holes",
+                    "PLATE_HOLE_FAILED",
+                    "Fusion could not create every parameter-driven through-hole.",
+                )
+
+            def rollback(self):
+                return {
+                    "clean": False,
+                    "deleted_occurrence": False,
+                    "deleted_parameters": [],
+                    "errors": ["invalid post-abort handle"],
+                }
+
+        original_execute = self.app.executeTextCommand
+
+        def execute(command):
+            result = original_execute(command)
+            if command == "PTransaction.Abort":
+                for parameter in design.userParameters:
+                    parameter.deleted = True
+            return result
+
+        self.app.executeTextCommand = execute
+
+        result = self.create(builder_factory=Builder)
+
+        self.assertEqual("PLATE_HOLE_FAILED", result["error"]["code"])
+        self.assertTrue(result["error"]["details"]["rollback"]["transaction_restored"])
+        self.assertEqual(0, self.design.userParameters.count)
 
     def test_recompute_failure_aborts_and_returns_recompute_error(self):
         self.design.compute_result = False

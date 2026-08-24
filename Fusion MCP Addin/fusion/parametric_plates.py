@@ -229,7 +229,7 @@ def create_parametric_plate(
                 entity_token(sketch)
                 for sketch in (
                     [created["profile_sketch"]]
-                    + ([created["hole_sketch"]] if created["hole_sketch"] is not None else [])
+                    + list(created["hole_sketches"])
                 )
             ],
             "parameter_names": generated_names,
@@ -283,12 +283,23 @@ def create_parametric_plate(
         return tool_success(payload)
     except Exception as error:
         _abort_transaction(app, transaction_started)
-        rollback = builder.rollback()
-        try:
-            design.computeAll()
-        except Exception:
-            pass
         current_counts, _snapshot = _state_counts(design)
+        if transaction_started and current_counts == starting_counts:
+            rollback = {
+                "clean": True,
+                "transaction_restored": True,
+                "deleted_occurrence": False,
+                "deleted_parameters": [],
+                "errors": [],
+            }
+        else:
+            rollback = builder.rollback()
+            rollback["transaction_restored"] = False
+            try:
+                design.computeAll()
+            except Exception:
+                pass
+            current_counts, _snapshot = _state_counts(design)
         counts_restored = current_counts == starting_counts
         if not rollback.get("clean") or not counts_restored:
             result = _error(

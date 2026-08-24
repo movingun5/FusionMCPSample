@@ -273,7 +273,7 @@ class FusionPlateBuilder:
 
     def _create_holes(self, name, evaluated, body):
         if not evaluated["holes"]:
-            return None, [], {}
+            return [], [], {}
         sketches = safe_value(self.component, "sketches")
         features = safe_value(self.component, "features")
         holes = safe_value(features, "holeFeatures")
@@ -284,14 +284,16 @@ class FusionPlateBuilder:
                 "PLATE_HOLE_FAILED",
                 "The plate does not expose a planar +Z face and hole features.",
             )
+        created_sketches = []
         try:
-            sketch = sketches.add(top_face)
-            if sketch is None:
-                raise RuntimeError("Fusion did not create the hole placement sketch.")
-            sketch.name = f"{name}_Holes"
-            sketch.isComputeDeferred = True
-            points = {}
+            placements = {}
             for hole in evaluated["holes"]:
+                sketch = sketches.add(top_face)
+                if sketch is None:
+                    raise RuntimeError("Fusion did not create a hole placement sketch.")
+                sketch.name = f"{name}_{hole['key']}_HolePlacement"
+                sketch.isComputeDeferred = True
+                created_sketches.append(sketch)
                 if abs(hole["x_cm"]) <= 1e-9 and abs(hole["y_cm"]) <= 1e-9:
                     point = sketch.originPoint
                 else:
@@ -311,8 +313,9 @@ class FusionPlateBuilder:
                         self.point_factory,
                         self.dimension_orientations,
                     )
-                points[hole["key"]] = point
-            sketch.isComputeDeferred = False
+                sketch.isComputeDeferred = False
+                sketch.isVisible = False
+                placements[hole["key"]] = point
 
             created_features = []
             inputs = {}
@@ -324,7 +327,7 @@ class FusionPlateBuilder:
                 )
                 if hole_input is None:
                     raise RuntimeError("Fusion did not create a simple-hole input.")
-                if hole_input.setPositionBySketchPoint(points[key]) is False:
+                if hole_input.setPositionBySketchPoint(placements[key]) is False:
                     raise RuntimeError("Fusion rejected a hole placement point.")
                 if hole_input.setDistanceExtent(
                     self.value_input_factory(evaluated["parameter_names"]["thickness"])
@@ -337,13 +340,13 @@ class FusionPlateBuilder:
                 feature.name = f"{name}_{key}_Hole"
                 created_features.append(feature)
                 inputs[key] = hole_input
-            sketch.isVisible = False
-            return sketch, created_features, inputs
+            return created_sketches, created_features, inputs
         except Exception as error:
-            try:
-                sketch.isComputeDeferred = False
-            except Exception:
-                pass
+            for sketch in created_sketches:
+                try:
+                    sketch.isComputeDeferred = False
+                except Exception:
+                    pass
             raise PlateBuildFailure(
                 "holes",
                 "PLATE_HOLE_FAILED",
@@ -423,7 +426,7 @@ class FusionPlateBuilder:
         parameters = self._create_parameters(name, evaluated)
         profile, profile_dimensions = self._create_profile(name, evaluated)
         extrusion, body = self._create_extrusion(name, evaluated, profile)
-        hole_sketch, hole_features, hole_inputs = self._create_holes(
+        hole_sketches, hole_features, hole_inputs = self._create_holes(
             name,
             evaluated,
             body,
@@ -436,7 +439,7 @@ class FusionPlateBuilder:
             "body": body,
             "profile_sketch": profile,
             "profile_dimensions": profile_dimensions,
-            "hole_sketch": hole_sketch,
+            "hole_sketches": hole_sketches,
             "extrusion": extrusion,
             "hole_features": hole_features,
             "hole_inputs": hole_inputs,
