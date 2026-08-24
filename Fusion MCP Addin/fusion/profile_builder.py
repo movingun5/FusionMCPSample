@@ -15,6 +15,20 @@ class ProfileBuildFailure(RuntimeError):
         self.message = message
 
 
+def _remove_inferred_point_constraints(point):
+    """Remove constraints Fusion inferred before explicit coordinate dimensions."""
+
+    constraints = safe_value(point, "geometricConstraints")
+    count = int(safe_value(constraints, "count", 0))
+    attached = [constraints.item(index) for index in range(count)]
+    for constraint in reversed(attached):
+        if safe_value(constraint, "isDeletable", True) is False:
+            raise RuntimeError("Fusion inferred a non-deletable point constraint.")
+        delete = safe_value(constraint, "deleteMe")
+        if not callable(delete) or delete() is False:
+            raise RuntimeError("Fusion could not remove an inferred point constraint.")
+
+
 class FusionProfileBuilder:
     """Build profile entities without owning transaction or checkpoint policy."""
 
@@ -196,6 +210,7 @@ class FusionProfileBuilder:
                     )
                     if point is None:
                         raise RuntimeError("Fusion did not create a profile sketch point.")
+                    _remove_inferred_point_constraints(point)
                     vertex_names = names[vertex["key"]]
                     _add_position_dimensions(
                         sketch,

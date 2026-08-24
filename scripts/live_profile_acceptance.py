@@ -12,7 +12,10 @@ import sys
 import tempfile
 from urllib.error import URLError
 
-from scripts.live_acceptance import MCPClient, structured
+if __package__:
+    from scripts.live_acceptance import MCPClient, structured
+else:
+    from live_acceptance import MCPClient, structured
 
 
 EXPECTED_FUSION_VERSION = "2704.1.53"

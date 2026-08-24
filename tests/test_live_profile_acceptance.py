@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 import struct
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -15,6 +17,22 @@ from scripts.live_profile_acceptance import (
 
 
 class LiveProfileAcceptanceTests(unittest.TestCase):
+    def test_script_entrypoint_can_be_run_directly_from_the_repository(self):
+        repository = Path(__file__).resolve().parents[1]
+        script = repository / "scripts" / "live_profile_acceptance.py"
+
+        completed = subprocess.run(
+            [sys.executable, str(script), "--help"],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertIn("--confirm-blank-design", completed.stdout)
+
     def test_committed_drawing_fixtures_are_distinct_1200_by_800_pngs(self):
         asset_dir = Path(__file__).resolve().parent / "assets"
         top = (asset_dir / "profile-l-top.png").read_bytes()

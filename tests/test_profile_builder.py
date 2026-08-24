@@ -13,10 +13,12 @@ from tests.fakes import (
     FakeBody,
     FakeCollection,
     FakeComponent,
+    FakeCreatedSketch,
     FakeDesign,
     FakeFeature,
     FakeOccurrences,
     FakePoint,
+    FakeSketchPoint,
 )
 
 
@@ -63,6 +65,44 @@ class _Features(FakeCollection):
 
     def __iter__(self):
         return iter(self.extrudeFeatures)
+
+
+class _InferredAxisConstraint:
+    def __init__(self):
+        self.deleted = False
+        self.isDeletable = True
+
+    def deleteMe(self):
+        self.deleted = True
+        return True
+
+
+class _AxisInferringSketchPoints(FakeCollection):
+    def __init__(self):
+        super().__init__()
+        self.inferred_constraints = []
+
+    def add(self, point):
+        sketch_point = FakeSketchPoint(point)
+        sketch_point.geometricConstraints = FakeCollection()
+        if any(
+            abs(existing.geometry.x - point.x) <= 1e-9
+            or abs(existing.geometry.y - point.y) <= 1e-9
+            for existing in self._items
+        ):
+            constraint = _InferredAxisConstraint()
+            sketch_point.geometricConstraints._items.append(constraint)
+            self.inferred_constraints.append(constraint)
+        self._items.append(sketch_point)
+        return sketch_point
+
+
+class _AxisInferringSketches(FakeCollection):
+    def add(self, plane):
+        sketch = FakeCreatedSketch(plane, f"sketch-{len(self._items) + 1}")
+        sketch.sketchPoints = _AxisInferringSketchPoints()
+        self._items.append(sketch)
+        return sketch
 
 
 def _component_factory(fail_extrusion=False):
@@ -148,6 +188,17 @@ class ProfileBuilderTests(unittest.TestCase):
         self.assertIn("l_profile_p3_y", expressions)
         self.assertEqual(10, len(expressions))
         self.assertEqual(2, len(result["profile_sketch"].geometricConstraints._items))
+
+    def test_removes_axis_constraints_inferred_while_adding_repeated_coordinates(self):
+        self.design.designIntent = "PartDesignIntentType"
+        self.root.features = _Features(self.root)
+        self.root.sketches = _AxisInferringSketches()
+
+        result = self.builder().build("LProfile", self.evaluated())
+        inferred = result["profile_sketch"].sketchPoints.inferred_constraints
+
+        self.assertGreater(len(inferred), 0)
+        self.assertTrue(all(constraint.deleted for constraint in inferred))
 
     def test_rolls_back_hybrid_occurrence_and_parameters_after_extrusion_failure(self):
         self.root.occurrences = FakeOccurrences(
