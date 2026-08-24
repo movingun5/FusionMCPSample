@@ -26,6 +26,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **create_fillet**: Apply a named constant-radius fillet to all, top, bottom, or vertical edges of a named solid body
 - **create_chamfer**: Apply a named equal-distance chamfer to all, top, bottom, or vertical edges of a named solid body
 - **create_linear_pattern**: Repeat a named feature along the X, Y, or Z construction axis using a count and adjacent-spacing expression
+- **create_reference_canvas**: Place a local PNG/JPEG/TIFF on XY/XZ/YZ at a calibrated physical width while preserving its aspect ratio
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions
@@ -89,6 +90,8 @@ python scripts/live_acceptance.py --confirm-blank-design --report docs/live-vali
 See [live validation status](docs/live-validation.md). A missing live run is reported as unverified, never as a pass.
 
 CAD files and the add-in remain local. Prompts, MCP results, error summaries, and screenshots supplied to Codex may be sent to OpenAI's model service.
+
+For image- or drawing-based work, Codex interprets visible dimensions and geometry; the add-in does not perform OCR or automatic contour reconstruction. The reference-canvas tool reads an existing absolute local image path, places it in Fusion, and returns only the image basename and calibration metadata—not the image bytes or full path.
 
 ## License
 Samples are licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](LICENSE) file for full details.

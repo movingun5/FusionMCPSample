@@ -1,5 +1,7 @@
 """Fusion status and bounded active-design context serialization."""
 
+from pathlib import Path
+
 from .snapshot import body_summary, entity_token, iter_collection, safe_value
 
 
@@ -33,7 +35,7 @@ def _app_version(app):
     return None
 
 
-def get_status(app, server_version="1.9.0"):
+def get_status(app, server_version="2.0.0"):
     if app is None:
         return {
             "fusion_available": False,
@@ -85,16 +87,63 @@ def _model_parameter_summary(parameter, component):
     }
 
 
+def _canvas_plane(canvas, component):
+    planar_entity = safe_value(canvas, "planarEntity")
+    for plane, attribute in (
+        ("xy", "xYConstructionPlane"),
+        ("xz", "xZConstructionPlane"),
+        ("yz", "yZConstructionPlane"),
+    ):
+        if planar_entity is safe_value(component, attribute):
+            return plane
+    return "unknown"
+
+
+def _canvas_summary(canvas, component):
+    transform = safe_value(canvas, "transform")
+    center_x = center_y = width = height = None
+    if transform is not None:
+        try:
+            origin, x_axis, y_axis = transform.getAsCoordinateSystem()
+            center_x = round(float(safe_value(origin, "x", 0.0)) * 10.0, 6)
+            center_y = round(float(safe_value(origin, "y", 0.0)) * 10.0, 6)
+            width = round(abs(float(safe_value(x_axis, "length", 0.0))) * 10.0, 6)
+            height = round(abs(float(safe_value(y_axis, "length", 0.0))) * 10.0, 6)
+        except Exception:
+            pass
+    image_filename = safe_value(canvas, "imageFilename", "")
+    return {
+        "name": safe_value(canvas, "name", ""),
+        "entity_token": entity_token(canvas),
+        "image_name": Path(str(image_filename)).name if image_filename else "",
+        "plane": _canvas_plane(canvas, component),
+        "width_mm": width,
+        "height_mm": height,
+        "center_x_mm": center_x,
+        "center_y_mm": center_y,
+        "opacity": safe_value(canvas, "opacity"),
+        "selectable": bool(safe_value(canvas, "isSelectable", False)),
+    }
+
+
 def _component_summary(component, limiter):
     bodies = []
     for body in iter_collection(safe_value(component, "bRepBodies")):
         if not limiter.take():
             break
         bodies.append(body_summary(body))
+    canvases_collection = safe_value(component, "canvases")
+    canvases = []
+    for canvas in iter_collection(canvases_collection):
+        if not limiter.take():
+            break
+        canvases.append(_canvas_summary(canvas, component))
     return {
         "name": safe_value(component, "name", ""),
         "entity_token": entity_token(component),
         "bodies": bodies,
+        "canvases": canvases,
+        "canvas_count": safe_value(canvases_collection, "count", 0),
         "sketch_count": safe_value(safe_value(component, "sketches"), "count", 0),
         "feature_count": safe_value(safe_value(component, "features"), "count", 0),
     }

@@ -5,6 +5,8 @@ from fusion_mcp_addin.fusion.context import build_design_context, get_status
 from tests.fakes import (
     FakeApp,
     FakeBody,
+    FakeCanvas,
+    FakeCanvasInput,
     FakeComponent,
     FakeDesign,
     FakeFeature,
@@ -37,7 +39,7 @@ class ContextTests(unittest.TestCase):
     def test_status_defaults_to_parameter_tool_server_version(self):
         status = get_status(self.app)
 
-        self.assertEqual("1.9.0", status["server_version"])
+        self.assertEqual("2.0.0", status["server_version"])
 
     def test_context_returns_components_bodies_and_parameters(self):
         context = build_design_context(self.app, scope="all", limit=20)
@@ -47,6 +49,29 @@ class ContextTests(unittest.TestCase):
         self.assertEqual("Plate", context["components"][0]["bodies"][0]["name"])
         self.assertEqual("100 mm", context["parameters"][0]["expression"])
         self.assertFalse(context["truncated"])
+
+    def test_context_returns_safe_canvas_summary_without_full_image_path(self):
+        root = self.design.rootComponent
+        canvas_input = FakeCanvasInput(
+            r"C:\private\reference\plate.png",
+            root.xYConstructionPlane,
+        )
+        canvas_input.opacity = 65
+        canvas = FakeCanvas(canvas_input, "canvas-1")
+        canvas.name = "Front Reference"
+        root.canvases._items.append(canvas)
+
+        context = build_design_context(self.app, scope="all", limit=20)
+
+        component = context["components"][0]
+        self.assertEqual(1, component["canvas_count"])
+        self.assertEqual("Front Reference", component["canvases"][0]["name"])
+        self.assertEqual("plate.png", component["canvases"][0]["image_name"])
+        self.assertEqual("xy", component["canvases"][0]["plane"])
+        self.assertEqual(20.0, component["canvases"][0]["width_mm"])
+        self.assertEqual(10.0, component["canvases"][0]["height_mm"])
+        self.assertEqual(65, component["canvases"][0]["opacity"])
+        self.assertNotIn(r"C:\private\reference", repr(context))
 
     def test_context_returns_model_parameter_owner_and_role_for_edits(self):
         feature = FakeFeature("Plate Extrusion", "feature-1")

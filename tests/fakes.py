@@ -178,6 +178,102 @@ class FakeFeature:
         self.errorOrWarningMessage = "" if "Healthy" in health else "failed"
 
 
+class FakePoint2D:
+    def __init__(self, x=0.0, y=0.0):
+        self.x = x
+        self.y = y
+
+
+class FakeVector2D:
+    def __init__(self, x=0.0, y=0.0):
+        self.x = x
+        self.y = y
+
+    @property
+    def length(self):
+        return (self.x ** 2 + self.y ** 2) ** 0.5
+
+
+class FakeMatrix2D:
+    def __init__(self):
+        self.origin = FakePoint2D()
+        self.x_axis = FakeVector2D(2.0, 0.0)
+        self.y_axis = FakeVector2D(0.0, 1.0)
+
+    def getAsCoordinateSystem(self):
+        return self.origin, self.x_axis, self.y_axis
+
+    def setWithCoordinateSystem(self, origin, x_axis, y_axis):
+        self.origin = origin
+        self.x_axis = x_axis
+        self.y_axis = y_axis
+        return True
+
+
+class FakeCanvasInput:
+    def __init__(self, image_filename, plane):
+        self.imageFilename = image_filename
+        self.planarEntity = plane
+        self.transform = FakeMatrix2D()
+        self.opacity = 50
+        self.isSelectable = False
+        self.isDisplayedThrough = True
+        self.isRenderable = False
+
+
+class FakeCanvas:
+    def __init__(self, canvas_input, token):
+        self.name = "Canvas"
+        self.entityToken = token
+        self.imageFilename = canvas_input.imageFilename
+        self.planarEntity = canvas_input.planarEntity
+        self.transform = canvas_input.transform
+        self.opacity = canvas_input.opacity
+        self.isSelectable = canvas_input.isSelectable
+        self.isDisplayedThrough = canvas_input.isDisplayedThrough
+        self.isRenderable = canvas_input.isRenderable
+        self.deleted = False
+
+    def deleteMe(self):
+        self.deleted = True
+        return True
+
+
+class FakeCanvases(FakeCollection):
+    def __init__(self, items=(), fail_input=False, fail_add=False):
+        super().__init__(items)
+        self.fail_input = fail_input
+        self.fail_add = fail_add
+
+    @property
+    def count(self):
+        return len([item for item in self._items if not item.deleted])
+
+    def item(self, index):
+        return [item for item in self._items if not item.deleted][index]
+
+    def __iter__(self):
+        return iter([item for item in self._items if not item.deleted])
+
+    def itemByName(self, name):
+        return next(
+            (item for item in self._items if item.name == name and not item.deleted),
+            None,
+        )
+
+    def createInput(self, image_filename, plane):
+        if self.fail_input:
+            return None
+        return FakeCanvasInput(image_filename, plane)
+
+    def add(self, canvas_input):
+        if self.fail_add:
+            return None
+        canvas = FakeCanvas(canvas_input, f"canvas-{len(self._items) + 1}")
+        self._items.append(canvas)
+        return canvas
+
+
 class FakeComponent:
     def __init__(
         self,
@@ -187,6 +283,7 @@ class FakeComponent:
         sketches=(),
         features=(),
         model_parameters=(),
+        canvases=(),
     ):
         self.name = name
         self.entityToken = token
@@ -194,6 +291,7 @@ class FakeComponent:
         self.sketches = FakeSketches(sketches)
         self.features = FakeCollection(features)
         self.modelParameters = FakeCollection(model_parameters)
+        self.canvases = FakeCanvases(canvases)
         self.xYConstructionPlane = object()
         self.xZConstructionPlane = object()
         self.yZConstructionPlane = object()

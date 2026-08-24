@@ -25,8 +25,9 @@ def handler(scope="summary", limit=200):
 tool = Tool.create_simple(
     name="get_design_context",
     description=(
-        "Read the active Fusion design's units, components, bodies, user and model "
-        "parameters, and stable entity tokens before generating or editing geometry."
+        "Read the active Fusion design's units, components, bodies, calibrated "
+        "reference canvases, user and model parameters, and stable entity tokens "
+        "before generating or editing geometry."
     ),
 ).add_input_property(
     "scope",

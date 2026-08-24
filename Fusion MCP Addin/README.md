@@ -105,6 +105,10 @@ Create one named equal-distance chamfer on a named solid body. Select `all`, `to
 
 Create one named single-direction pattern of an existing named feature along the active component's X, Y, or Z construction axis. The total quantity includes the original feature, and `spacing_expression` defines the distance between adjacent instances. A negative spacing reverses direction. This first pattern version supports one direction and feature targets; two-direction, circular, and body patterns remain future extensions.
 
+### create_reference_canvas
+
+Place an existing absolute local PNG, JPEG, or TIFF image on the active component's XY, XZ, or YZ construction plane. Supply a positive Fusion `width_expression`; the tool preserves the image aspect ratio and supports center offsets, opacity, and horizontal or vertical flips. Files must be regular local files no larger than 25 MiB. Codex interprets drawing dimensions and geometry—the add-in does not provide OCR, automatic contour tracing, perspective correction, or full photo reconstruction.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
@@ -161,7 +165,7 @@ Search the Fusion API documentation to find classes, properties, methods, and th
 
 **Local logs:** execution audit records are written under the operating system temporary directory in `fusion-codex-mcp/audit.jsonl`. Delete that file when its local history is no longer needed. Authorization values are redacted.
 
-**Data boundary:** CAD documents and the HTTP server stay local. Prompts, MCP results, error summaries, and screenshots passed into Codex may be transmitted to OpenAI's model service.
+**Data boundary:** CAD documents and the HTTP server stay local. Prompts, attached images, MCP results, error summaries, and screenshots passed into Codex may be transmitted to OpenAI's model service. A Fusion reference canvas is imported from a local path; MCP responses and audit records expose only its basename and calibration metadata, never the full path or image bytes.
 
 ## License
 
