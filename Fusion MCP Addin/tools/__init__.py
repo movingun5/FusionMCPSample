@@ -21,6 +21,7 @@ from . import create_fillet
 from . import create_chamfer
 from . import create_linear_pattern
 from . import create_reference_canvas
+from . import create_orthographic_canvas_set
 from . import get_viewport_screenshot
 from . import undo_last_execution
 from . import export_design

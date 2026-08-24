@@ -27,6 +27,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **create_chamfer**: Apply a named equal-distance chamfer to all, top, bottom, or vertical edges of a named solid body
 - **create_linear_pattern**: Repeat a named feature along the X, Y, or Z construction axis using a count and adjacent-spacing expression
 - **create_reference_canvas**: Place a local PNG/JPEG/TIFF on XY/XZ/YZ at a calibrated physical width while preserving its aspect ratio
+- **create_orthographic_canvas_set**: Atomically place 2–3 unique principal-view images, validate their shared X/Y/Z dimensions within tolerance, and record one whole-set Undo checkpoint
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions
@@ -91,7 +92,7 @@ See [live validation status](docs/live-validation.md). A missing live run is rep
 
 CAD files and the add-in remain local. Prompts, MCP results, error summaries, and screenshots supplied to Codex may be sent to OpenAI's model service.
 
-For image- or drawing-based work, Codex interprets visible dimensions and geometry; the add-in does not perform OCR or automatic contour reconstruction. The reference-canvas tool reads an existing absolute local image path, places it in Fusion, and returns only the image basename and calibration metadata—not the image bytes or full path.
+For image- or drawing-based work, Codex interprets visible dimensions and geometry; the add-in does not perform OCR, automatic contour reconstruction, or perspective correction. The canvas tools read existing absolute local image paths and return only basenames and calibration metadata—not image bytes or full paths. A single image can be placed with `create_reference_canvas`; 2–3 unique XY/XZ/YZ views can be placed all-or-nothing with `create_orthographic_canvas_set`, which validates shared model dimensions before changing Fusion and removes the complete set with one checkpointed Undo.
 
 ## License
 Samples are licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](LICENSE) file for full details.

@@ -222,7 +222,7 @@ class FakeCanvasInput:
 
 
 class FakeCanvas:
-    def __init__(self, canvas_input, token):
+    def __init__(self, canvas_input, token, collection=None):
         self.name = "Canvas"
         self.entityToken = token
         self.imageFilename = canvas_input.imageFilename
@@ -233,17 +233,24 @@ class FakeCanvas:
         self.isDisplayedThrough = canvas_input.isDisplayedThrough
         self.isRenderable = canvas_input.isRenderable
         self.deleted = False
+        self.collection = collection
 
     def deleteMe(self):
         self.deleted = True
+        if self.collection is not None:
+            self.collection.deleted_tokens.append(self.entityToken)
         return True
 
 
 class FakeCanvases(FakeCollection):
-    def __init__(self, items=(), fail_input=False, fail_add=False):
+    def __init__(self, items=(), fail_input=False, fail_add=False, fail_add_at=None):
         super().__init__(items)
         self.fail_input = fail_input
         self.fail_add = fail_add
+        self.fail_add_at = fail_add_at
+        self.add_attempts = 0
+        self.deleted_tokens = []
+        self.aspect_ratio = 2.0
 
     @property
     def count(self):
@@ -264,12 +271,19 @@ class FakeCanvases(FakeCollection):
     def createInput(self, image_filename, plane):
         if self.fail_input:
             return None
-        return FakeCanvasInput(image_filename, plane)
+        canvas_input = FakeCanvasInput(image_filename, plane)
+        canvas_input.transform.x_axis = FakeVector2D(self.aspect_ratio, 0.0)
+        return canvas_input
 
     def add(self, canvas_input):
-        if self.fail_add:
+        self.add_attempts += 1
+        if self.fail_add or self.add_attempts == self.fail_add_at:
             return None
-        canvas = FakeCanvas(canvas_input, f"canvas-{len(self._items) + 1}")
+        canvas = FakeCanvas(
+            canvas_input,
+            f"canvas-{len(self._items) + 1}",
+            collection=self,
+        )
         self._items.append(canvas)
         return canvas
 

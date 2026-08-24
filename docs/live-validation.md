@@ -11,6 +11,7 @@
 - Live single-direction feature-pattern status: **passed on Fusion 2704.1.53**
 - Live feature-owned model-parameter update status: **passed on Fusion 2704.1.53**
 - Live calibrated reference-canvas status: **passed on Fusion 2704.1.53 with server 2.0.0**
+- Live orthographic canvas-set status: **not run; restart required for server 2.1.0**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -18,7 +19,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **141 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
+Current result: **162 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Live server 2.1.0 behavior remains pending until Fusion restarts. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
 
 Run:
 

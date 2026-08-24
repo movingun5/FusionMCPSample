@@ -109,6 +109,10 @@ Create one named single-direction pattern of an existing named feature along the
 
 Place an existing absolute local PNG, JPEG, or TIFF image on the active component's XY, XZ, or YZ construction plane. Supply a positive Fusion `width_expression`; the tool preserves the image aspect ratio and supports center offsets, opacity, and horizontal or vertical flips. Files must be regular local files no larger than 25 MiB. Codex interprets drawing dimensions and geometry—the add-in does not provide OCR, automatic contour tracing, perspective correction, or full photo reconstruction.
 
+### create_orthographic_canvas_set
+
+Place 2–3 existing orthographic PNG, JPEG, or TIFF images on unique XY, XZ, or YZ construction planes. XY contributes X/Y, XZ contributes X/Z, and YZ contributes Y/Z; every shared dimension must agree within `dimension_tolerance_mm` before Fusion is changed. All inputs are prepared first, all canvases are created in one transaction, and one checkpointed Undo removes the whole set. Results and audit records contain basenames and calibration metadata only. This tool does not perform OCR, contour tracing, perspective correction, or image reconstruction.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
@@ -165,7 +169,7 @@ Search the Fusion API documentation to find classes, properties, methods, and th
 
 **Local logs:** execution audit records are written under the operating system temporary directory in `fusion-codex-mcp/audit.jsonl`. Delete that file when its local history is no longer needed. Authorization values are redacted.
 
-**Data boundary:** CAD documents and the HTTP server stay local. Prompts, attached images, MCP results, error summaries, and screenshots passed into Codex may be transmitted to OpenAI's model service. A Fusion reference canvas is imported from a local path; MCP responses and audit records expose only its basename and calibration metadata, never the full path or image bytes.
+**Data boundary:** CAD documents and the HTTP server stay local. Prompts, attached images, MCP results, error summaries, and screenshots passed into Codex may be transmitted to OpenAI's model service. Fusion reference canvases are imported from local paths; MCP responses and audit records expose only basenames and calibration metadata, never full paths or image bytes.
 
 ## License
 

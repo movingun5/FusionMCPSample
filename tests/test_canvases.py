@@ -4,7 +4,10 @@ import unittest
 
 import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.core.audit import AuditLogger
-from fusion_mcp_addin.fusion.canvases import create_reference_canvas
+from fusion_mcp_addin.fusion.canvases import (
+    create_reference_canvas,
+    prepare_reference_canvas,
+)
 from fusion_mcp_addin.fusion.checkpoints import clear_last_checkpoint, get_last_checkpoint
 from tests.fakes import FakeApp, FakeCanvas, FakeCanvasInput, FakeComponent, FakeDesign
 
@@ -69,6 +72,38 @@ class ReferenceCanvasTests(unittest.TestCase):
         self.assertEqual("Front Reference", checkpoint["canvas_name"])
         self.assertEqual(canvas.entityToken, checkpoint["canvas_entity_token"])
         self.assertEqual(self.root.entityToken, checkpoint["component_entity_token"])
+
+    def test_prepares_canvas_without_mutating_design(self):
+        prepared = prepare_reference_canvas(
+            self.design,
+            self.root,
+            "Front Reference",
+            str(self.image_path),
+            "xy",
+            "100 mm",
+            center_x_expression="10 mm",
+            center_y_expression="-5 mm",
+            opacity=60,
+            point_factory=lambda x, y: __import__(
+                "tests.fakes", fromlist=["FakePoint2D"]
+            ).FakePoint2D(x, y),
+            vector_factory=lambda x, y: __import__(
+                "tests.fakes", fromlist=["FakeVector2D"]
+            ).FakeVector2D(x, y),
+        )
+
+        self.assertEqual("Front Reference", prepared["name"])
+        self.assertEqual("plate.png", prepared["image_name"])
+        self.assertEqual(10, prepared["image_size_bytes"])
+        self.assertEqual("xy", prepared["plane"])
+        self.assertEqual(100.0, prepared["width_mm"])
+        self.assertEqual(50.0, prepared["height_mm"])
+        self.assertEqual([10.0, -5.0], prepared["center_mm"])
+        self.assertEqual(60, prepared["opacity"])
+        self.assertIs(False, prepared["flip_horizontal"])
+        self.assertIs(False, prepared["flip_vertical"])
+        self.assertEqual(0, self.root.canvases.count)
+        self.assertEqual([], self.app.commands)
 
     def test_selects_each_supported_principal_plane(self):
         for plane, attribute in (

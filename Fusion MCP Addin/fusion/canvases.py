@@ -27,6 +27,15 @@ class _RecomputeFailure(RuntimeError):
     pass
 
 
+class CanvasValidation(ValueError):
+    def __init__(self, code, message, retryable=False, details=None):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.retryable = bool(retryable)
+        self.details = details or {}
+
+
 def _default_audit_logger():
     path = Path(tempfile.gettempdir()) / "fusion-codex-mcp" / "audit.jsonl"
     return AuditLogger(path)
@@ -123,8 +132,19 @@ def _evaluate_length(units_manager, expression, target_unit):
     return float(units_manager.evaluateExpression(expression, target_unit))
 
 
-def create_reference_canvas(
-    app,
+def _raise_result_error(result):
+    error = result["error"]
+    raise CanvasValidation(
+        error["code"],
+        error["message"],
+        retryable=error["retryable"],
+        details=error["details"],
+    )
+
+
+def prepare_reference_canvas(
+    design,
+    component,
     name,
     image_path,
     plane,
@@ -136,15 +156,8 @@ def create_reference_canvas(
     flip_vertical=False,
     point_factory=None,
     vector_factory=None,
-    audit_logger=None,
 ):
-    """Create one aspect-preserving, physically calibrated principal-plane canvas."""
-
-    started_at = time.time()
-    request_id = hashlib.sha256(
-        f"{time.time_ns()}:{name}:{plane}".encode("utf-8")
-    ).hexdigest()[:16]
-    logger = audit_logger or _default_audit_logger()
+    """Validate and calibrate one canvas input without adding it to Fusion."""
 
     string_fields = {
         "name": name,
@@ -154,12 +167,12 @@ def create_reference_canvas(
     }
     for field, value in string_fields.items():
         if not isinstance(value, str) or not value.strip():
-            return _error(
+            raise CanvasValidation(
                 "INVALID_REQUEST",
                 f"{field} must be a non-empty string.",
             )
     if plane not in _PLANES:
-        return _error(
+        raise CanvasValidation(
             "INVALID_REQUEST",
             "plane must be one of: xy, xz, yz.",
             details={"plane": plane},
@@ -169,39 +182,36 @@ def create_reference_canvas(
         or isinstance(opacity, bool)
         or not 0 <= opacity <= 100
     ):
-        return _error(
+        raise CanvasValidation(
             "INVALID_REQUEST",
             "opacity must be an integer from 0 through 100.",
         )
     if not isinstance(flip_horizontal, bool) or not isinstance(flip_vertical, bool):
-        return _error(
+        raise CanvasValidation(
             "INVALID_REQUEST",
             "flip_horizontal and flip_vertical must be booleans.",
         )
 
     image, image_error = _validate_image_path(image_path)
     if image_error is not None:
-        return image_error
+        _raise_result_error(image_error)
     resolved_image, image_size = image
     name = name.strip()
     width_expression = width_expression.strip()
     center_x_expression = center_x_expression.strip()
     center_y_expression = center_y_expression.strip()
 
-    design = safe_value(app, "activeProduct") if app is not None else None
-    root = safe_value(design, "rootComponent")
-    if design is None or root is None:
-        return _error(
+    if design is None or component is None:
+        raise CanvasValidation(
             "NO_ACTIVE_DESIGN",
             "Open or create a Fusion design first.",
             retryable=True,
         )
-    component = safe_value(design, "activeComponent") or root
     canvases = safe_value(component, "canvases")
     units_manager = safe_value(design, "unitsManager")
     construction_plane = safe_value(component, _PLANES[plane])
     if canvases is None or units_manager is None or construction_plane is None:
-        return _error(
+        raise CanvasValidation(
             "FUSION_API_ERROR",
             "The active component does not expose canvases, units, or the requested plane.",
             retryable=True,
@@ -214,7 +224,7 @@ def create_reference_canvas(
             None,
         )
     if existing is not None:
-        return _error(
+        raise CanvasValidation(
             "CANVAS_NAME_CONFLICT",
             "A canvas with the requested name already exists.",
             details={"name": name},
@@ -230,21 +240,21 @@ def create_reference_canvas(
     try:
         for field, expression in expressions:
             values[field] = _evaluate_length(units_manager, expression, target_unit)
-    except Exception:
-        return _error(
+    except Exception as error:
+        raise CanvasValidation(
             "CANVAS_EXPRESSION_INVALID",
             "Fusion could not evaluate one of the canvas length expressions.",
             details={"unit": target_unit},
-        )
+        ) from error
     if not all(math.isfinite(value) for value in values.values()):
-        return _error(
+        raise CanvasValidation(
             "CANVAS_EXPRESSION_INVALID",
             "Canvas length expressions must evaluate to finite values.",
             details={"unit": target_unit},
         )
     width = values["width_expression"]
     if width <= 1e-9:
-        return _error(
+        raise CanvasValidation(
             "CANVAS_WIDTH_INVALID",
             "Canvas width must be greater than zero.",
             details={"width_expression": width_expression},
@@ -254,28 +264,6 @@ def create_reference_canvas(
         point_factory,
         vector_factory,
     )
-    base_audit = {
-        "request_id": request_id,
-        "mutation": "create_reference_canvas",
-        "name": name,
-        "image_name": resolved_image.name,
-        "image_size_bytes": image_size,
-        "plane": plane,
-        "width_expression": width_expression,
-        "center_x_expression": center_x_expression,
-        "center_y_expression": center_y_expression,
-        "opacity": opacity,
-        "flip_horizontal": flip_horizontal,
-        "flip_vertical": flip_vertical,
-    }
-    document = safe_value(app, "activeDocument")
-    timeline = safe_value(design, "timeline")
-    document_id = safe_value(document, "id") or safe_value(
-        safe_value(design, "parentDocument"), "id"
-    )
-    timeline_marker = safe_value(timeline, "markerPosition")
-    transaction_started = False
-    canvas = None
     try:
         canvas_input = canvases.createInput(str(resolved_image), construction_plane)
         if canvas_input is None:
@@ -307,14 +295,141 @@ def create_reference_canvas(
         canvas_input.isSelectable = True
         canvas_input.isDisplayedThrough = True
         canvas_input.isRenderable = False
+    except CanvasValidation:
+        raise
+    except Exception as error:
+        raise CanvasValidation(
+            "CANVAS_PREPARATION_FAILED",
+            "Fusion could not prepare the reference canvas.",
+            retryable=True,
+            details={"name": name, "image_name": resolved_image.name, "plane": plane},
+        ) from error
 
+    return {
+        "name": name,
+        "image_name": resolved_image.name,
+        "image_size_bytes": image_size,
+        "plane": plane,
+        "width_expression": width_expression,
+        "center_x_expression": center_x_expression,
+        "center_y_expression": center_y_expression,
+        "width_mm": round(width * 10.0, 6),
+        "height_mm": round(height * 10.0, 6),
+        "center_mm": [
+            round(values["center_x_expression"] * 10.0, 6),
+            round(values["center_y_expression"] * 10.0, 6),
+        ],
+        "opacity": opacity,
+        "flip_horizontal": flip_horizontal,
+        "flip_vertical": flip_vertical,
+        "canvas_input": canvas_input,
+        "component": component,
+        "canvases": canvases,
+    }
+
+
+def add_prepared_canvas(canvases, prepared):
+    """Add one already-validated canvas input and assign its stable name."""
+
+    canvas = canvases.add(prepared["canvas_input"])
+    if canvas is None:
+        raise RuntimeError("Fusion did not create the reference canvas.")
+    canvas.name = prepared["name"]
+    return canvas
+
+
+def create_reference_canvas(
+    app,
+    name,
+    image_path,
+    plane,
+    width_expression,
+    center_x_expression="0 mm",
+    center_y_expression="0 mm",
+    opacity=50,
+    flip_horizontal=False,
+    flip_vertical=False,
+    point_factory=None,
+    vector_factory=None,
+    audit_logger=None,
+):
+    """Create one aspect-preserving, physically calibrated principal-plane canvas."""
+
+    started_at = time.time()
+    request_id = hashlib.sha256(
+        f"{time.time_ns()}:{name}:{plane}".encode("utf-8")
+    ).hexdigest()[:16]
+    logger = audit_logger or _default_audit_logger()
+
+    design = safe_value(app, "activeProduct") if app is not None else None
+    root = safe_value(design, "rootComponent")
+    if design is None or root is None:
+        return _error(
+            "NO_ACTIVE_DESIGN",
+            "Open or create a Fusion design first.",
+            retryable=True,
+        )
+    component = safe_value(design, "activeComponent") or root
+    try:
+        prepared = prepare_reference_canvas(
+            design,
+            component,
+            name,
+            image_path,
+            plane,
+            width_expression,
+            center_x_expression=center_x_expression,
+            center_y_expression=center_y_expression,
+            opacity=opacity,
+            flip_horizontal=flip_horizontal,
+            flip_vertical=flip_vertical,
+            point_factory=point_factory,
+            vector_factory=vector_factory,
+        )
+    except CanvasValidation as error:
+        if error.code == "CANVAS_PREPARATION_FAILED":
+            return _error(
+                "CANVAS_WRITE_FAILED",
+                "Fusion could not create the reference canvas.",
+                retryable=True,
+                details=error.details,
+            )
+        return _error(
+            error.code,
+            error.message,
+            retryable=error.retryable,
+            details=error.details,
+        )
+
+    name = prepared["name"]
+    canvases = prepared["canvases"]
+    base_audit = {
+        "request_id": request_id,
+        "mutation": "create_reference_canvas",
+        "name": name,
+        "image_name": prepared["image_name"],
+        "image_size_bytes": prepared["image_size_bytes"],
+        "plane": prepared["plane"],
+        "width_expression": prepared["width_expression"],
+        "center_x_expression": prepared["center_x_expression"],
+        "center_y_expression": prepared["center_y_expression"],
+        "opacity": prepared["opacity"],
+        "flip_horizontal": prepared["flip_horizontal"],
+        "flip_vertical": prepared["flip_vertical"],
+    }
+    document = safe_value(app, "activeDocument")
+    timeline = safe_value(design, "timeline")
+    document_id = safe_value(document, "id") or safe_value(
+        safe_value(design, "parentDocument"), "id"
+    )
+    timeline_marker = safe_value(timeline, "markerPosition")
+    transaction_started = False
+    canvas = None
+    try:
         if document is not None:
             app.executeTextCommand('PTransaction.Start "Codex Reference Canvas"')
             transaction_started = True
-        canvas = canvases.add(canvas_input)
-        if canvas is None:
-            raise RuntimeError("Fusion did not create the reference canvas.")
-        canvas.name = name
+        canvas = add_prepared_canvas(canvases, prepared)
         if design.computeAll() is False:
             raise _RecomputeFailure(
                 "Fusion could not recompute the design after creating the canvas."
@@ -338,21 +453,18 @@ def create_reference_canvas(
             "canvas": {
                 "name": safe_value(canvas, "name", name),
                 "entity_token": entity_token(canvas),
-                "image_name": resolved_image.name,
-                "image_size_bytes": image_size,
-                "plane": plane,
-                "width_expression": width_expression,
-                "center_x_expression": center_x_expression,
-                "center_y_expression": center_y_expression,
-                "width_mm": round(width * 10.0, 6),
-                "height_mm": round(height * 10.0, 6),
-                "center_mm": [
-                    round(values["center_x_expression"] * 10.0, 6),
-                    round(values["center_y_expression"] * 10.0, 6),
-                ],
-                "opacity": opacity,
-                "flip_horizontal": flip_horizontal,
-                "flip_vertical": flip_vertical,
+                "image_name": prepared["image_name"],
+                "image_size_bytes": prepared["image_size_bytes"],
+                "plane": prepared["plane"],
+                "width_expression": prepared["width_expression"],
+                "center_x_expression": prepared["center_x_expression"],
+                "center_y_expression": prepared["center_y_expression"],
+                "width_mm": prepared["width_mm"],
+                "height_mm": prepared["height_mm"],
+                "center_mm": prepared["center_mm"],
+                "opacity": prepared["opacity"],
+                "flip_horizontal": prepared["flip_horizontal"],
+                "flip_vertical": prepared["flip_vertical"],
             },
             "recomputed": True,
             "checkpoint_recorded": True,
@@ -389,8 +501,8 @@ def create_reference_canvas(
             retryable=True,
             details={
                 "name": name,
-                "image_name": resolved_image.name,
-                "plane": plane,
+                "image_name": prepared["image_name"],
+                "plane": prepared["plane"],
                 "undo_result": (
                     "transaction_aborted" if transaction_started else "canvas_deleted"
                 ),

@@ -77,6 +77,106 @@ def _undo_reference_canvas(app, design, document, checkpoint):
         )
 
 
+def _undo_reference_canvas_set(app, design, document, checkpoint):
+    root = safe_value(design, "rootComponent")
+    component = safe_value(design, "activeComponent") or root
+    expected_component = checkpoint.get("component_entity_token")
+    if expected_component and entity_token(component) != expected_component:
+        return _error(
+            "CHECKPOINT_COMPONENT_MISMATCH",
+            "The active component is not the component associated with the canvas-set checkpoint.",
+            retryable=True,
+        )
+    canvases = safe_value(component, "canvases")
+    expected_canvases = checkpoint.get("canvases")
+    if canvases is None or not isinstance(expected_canvases, list) or not expected_canvases:
+        return _error(
+            "CHECKPOINT_ENTITY_NOT_FOUND",
+            "The orthographic canvases associated with the checkpoint were not found.",
+            retryable=True,
+        )
+
+    candidates = list(iter_collection(canvases))
+    resolved = []
+    resolved_ids = set()
+    for expected in expected_canvases:
+        if not isinstance(expected, dict):
+            return _error(
+                "CHECKPOINT_ENTITY_NOT_FOUND",
+                "The orthographic canvas checkpoint is incomplete.",
+                retryable=True,
+            )
+        expected_token = expected.get("entity_token")
+        expected_name = expected.get("name")
+        target = next(
+            (
+                candidate
+                for candidate in candidates
+                if (
+                    expected_token
+                    and entity_token(candidate) == expected_token
+                )
+                or (
+                    not expected_token
+                    and expected_name
+                    and safe_value(candidate, "name") == expected_name
+                )
+            ),
+            None,
+        )
+        target_id = id(target) if target is not None else None
+        if target is None or target_id in resolved_ids:
+            return _error(
+                "CHECKPOINT_ENTITY_NOT_FOUND",
+                "Every orthographic canvas in the checkpoint must still exist before Undo.",
+                retryable=True,
+            )
+        resolved.append(target)
+        resolved_ids.add(target_id)
+
+    transaction_started = False
+    try:
+        if document is not None:
+            app.executeTextCommand(
+                'PTransaction.Start "Codex Undo Orthographic Canvas Set"'
+            )
+            transaction_started = True
+        for canvas in reversed(resolved):
+            if canvas.deleteMe() is False:
+                raise RuntimeError("Fusion rejected an orthographic canvas deletion.")
+        if design.computeAll() is False:
+            raise RuntimeError("Fusion could not recompute after deleting the canvas set.")
+        canvas_count = int(safe_value(canvases, "count", 0))
+        starting_canvas_count = checkpoint.get("starting_canvas_count")
+        if (
+            isinstance(starting_canvas_count, int)
+            and canvas_count != starting_canvas_count
+        ):
+            raise RuntimeError("The canvas collection did not return to its checkpoint count.")
+        if transaction_started:
+            app.executeTextCommand("PTransaction.Commit")
+        return {
+            "isError": False,
+            "message": "The most recent Codex orthographic canvas set was removed.",
+            "undone_request_id": checkpoint.get("request_id"),
+            "undo_mode": "canvas_set_deleted",
+            "canvas_count": canvas_count,
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Orthographic canvas set removed and the design recomputed.",
+                }
+            ],
+        }
+    except Exception:
+        _abort_transaction(app, transaction_started)
+        return _error(
+            "FUSION_API_ERROR",
+            "Fusion could not remove the checkpoint orthographic canvas set.",
+            retryable=True,
+        )
+
+
 def undo_with(app, checkpoint):
     if app is None:
         return MCPError("FUSION_UNAVAILABLE", "Fusion 360 is not available.", True).to_result()
@@ -97,6 +197,8 @@ def undo_with(app, checkpoint):
     if design is None:
         return MCPError("NO_ACTIVE_DESIGN", "Open the checkpoint design first.", True).to_result()
 
+    if checkpoint.get("mutation") == "create_orthographic_canvas_set":
+        return _undo_reference_canvas_set(app, design, document, checkpoint)
     if checkpoint.get("mutation") == "create_reference_canvas":
         return _undo_reference_canvas(app, design, document, checkpoint)
 
