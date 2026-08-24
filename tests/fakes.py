@@ -288,6 +288,50 @@ class FakeCanvases(FakeCollection):
         return canvas
 
 
+class FakeOccurrence:
+    def __init__(self, component, token, collection):
+        self.component = component
+        self.entityToken = token
+        self._collection = collection
+        self.deleted = False
+        self.fail_delete = False
+
+    def deleteMe(self):
+        if self.fail_delete:
+            return False
+        self.deleted = True
+        return True
+
+
+class FakeOccurrences(FakeCollection):
+    def __init__(self, items=(), component_factory=None, fail_add=False):
+        super().__init__(items)
+        self.component_factory = component_factory
+        self.fail_add = fail_add
+
+    @property
+    def count(self):
+        return len([item for item in self._items if not item.deleted])
+
+    def item(self, index):
+        return [item for item in self._items if not item.deleted][index]
+
+    def __iter__(self):
+        return iter([item for item in self._items if not item.deleted])
+
+    def addNewComponent(self, _matrix):
+        if self.fail_add:
+            return None
+        index = len(self._items) + 1
+        factory = self.component_factory or (
+            lambda: FakeComponent("Component", f"component-{index}")
+        )
+        component = factory()
+        occurrence = FakeOccurrence(component, f"occurrence-{index}", self)
+        self._items.append(occurrence)
+        return occurrence
+
+
 class FakeComponent:
     def __init__(
         self,
@@ -298,6 +342,7 @@ class FakeComponent:
         features=(),
         model_parameters=(),
         canvases=(),
+        occurrences=None,
     ):
         self.name = name
         self.entityToken = token
@@ -306,6 +351,7 @@ class FakeComponent:
         self.features = FakeCollection(features)
         self.modelParameters = FakeCollection(model_parameters)
         self.canvases = FakeCanvases(canvases)
+        self.occurrences = occurrences or FakeOccurrences()
         self.xYConstructionPlane = object()
         self.xZConstructionPlane = object()
         self.yZConstructionPlane = object()
