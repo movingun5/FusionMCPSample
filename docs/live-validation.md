@@ -11,7 +11,7 @@
 - Live single-direction feature-pattern status: **passed on Fusion 2704.1.53**
 - Live feature-owned model-parameter update status: **passed on Fusion 2704.1.53**
 - Live calibrated reference-canvas status: **passed on Fusion 2704.1.53 with server 2.0.0**
-- Live orthographic canvas-set status: **not run; restart required for server 2.1.0**
+- Live orthographic canvas-set status: **passed on Fusion 2704.1.53 with server 2.1.0**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **not run**
 
@@ -129,6 +129,19 @@ After installing the server 2.0.0 add-in and fully restarting Fusion, the authen
 
 An already-open Codex task retained its pre-update callable-tool cache even though the restarted server's authenticated `/tools` catalog included `create_reference_canvas`. The live creation therefore used the same authenticated MCP `tools/call` endpoint directly. Discovery of the new typed tool in a newly created Codex task remains a separate client-cache check; server registration and execution are verified.
 
+## Live orthographic canvas-set evidence
+
+After installing server 2.1.0 and fully restarting Fusion, `get_fusion_status` reported Fusion 2704.1.53, server 2.1.0, authentication enabled, and an active unsaved design. The authenticated server catalog contained 20 tools and exposed `create_orthographic_canvas_set`. The validation sequence was:
+
+1. Confirm zero bodies, sketches, features, and canvases through `get_design_context(scope="all")`.
+2. Create `Codex_Orthographic_Set_2_1` using the repository's 900 × 600 test image for an XY view and an XZ view, both calibrated to `100 mm` width, center `0 mm, 0 mm`, opacity 50, and no flips.
+3. Confirm one atomic success result and checkpoint. Both views reported only the basename `reference-plate-3x2.png`, size 30,523 bytes, `100.0 × 66.666671 mm`, and center `[0.0, 0.0]`. The shared X check compared `100.0 mm` with `100.0 mm`, reported a `0.0 mm` difference against the `0.25 mm` tolerance, and produced model axes X `100.0 mm`, Y `66.666671 mm`, and Z `66.666671 mm`.
+4. Confirm design context changed from zero to two canvases named `Codex_Orthographic_Set_2_1_XY` and `Codex_Orthographic_Set_2_1_XZ`, with the expected planes, independent dimensions, centers, opacity, and selectable state.
+5. Capture top and front views. The top capture showed the centered horizontal 3:2 reference with three aligned holes; the front capture showed the corresponding centered vertical presentation, also at the expected proportions.
+6. Call `undo_last_execution` once. The server returned success, recomputed the design, and a final context read confirmed the canvas count returned from two to zero. Final top and front captures both showed only the blank grid.
+
+The already-open Codex task retained its pre-2.1 typed-tool cache, so the new set creation used the authenticated MCP `tools/call` endpoint after confirming server registration. This live run validates two-view XY/XZ calibration, shared-X validation, atomic creation, context serialization, visual placement, and whole-set Undo. It deliberately reuses one synthetic image to isolate placement mechanics; three-view YZ behavior and modeling from distinct real drawings remain separate live scope.
+
 ## Required live procedure
 
 1. Set `FUSION_MCP_TOKEN` at user scope and restart Fusion and ChatGPT.
@@ -148,4 +161,4 @@ The generated JSON report strips base64 screenshot data and never includes the b
 
 ## Remaining live scope
 
-The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, calibrated XY reference canvases, viewport screenshots, and checkpoint-targeted canvas Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that a newly created Codex task refreshes the typed tool catalog, XZ/YZ live canvases, multiple-view image reconstruction, automatic OCR or contour tracing, the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
+The add-in manifest, bearer token, health endpoint, authenticated initialization, reconnect, user-parameter updates, feature-owned model-parameter updates, rectangle-sketch creation, New Body extrusion, simple top-face distance-depth holes, constant-radius fillets, equal-distance chamfers, single-direction feature patterns, calibrated XY reference canvases, atomic two-view XY/XZ canvas sets, viewport screenshots, checkpoint-targeted single-canvas Undo, and whole-set Undo are verified. A separate 50 mm cube creation also produced measured `50 × 50 × 50 mm` bounds and `125 cm³` volume. No claim is made yet that a newly created Codex task refreshes the typed tool catalog, three-view or YZ canvas sets, modeling from distinct real drawings, multiple-view image reconstruction, automatic OCR or contour tracing, the complete mounting-plate scenario, exports, approval dialogs, Join/Cut/Intersect extrusions, through-all holes, non-top-face holes, countersinks, counterbores, threads, two-direction patterns, circular patterns, body patterns, or model-parameter edits outside the active component have passed; those remain separate expansion scope.
