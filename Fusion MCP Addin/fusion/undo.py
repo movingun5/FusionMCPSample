@@ -1,7 +1,7 @@
 """Undo adapter for the most recent executor checkpoint."""
 
 from ..core.errors import MCPError
-from .snapshot import entity_token, iter_collection, safe_value
+from .snapshot import capture_snapshot, entity_token, iter_collection, safe_value
 
 
 def _error(code, message, retryable=False):
@@ -177,6 +177,100 @@ def _undo_reference_canvas_set(app, design, document, checkpoint):
         )
 
 
+def _design_counts(design):
+    counts = dict(capture_snapshot(design)["counts"])
+    counts["user_parameters"] = int(
+        safe_value(safe_value(design, "userParameters"), "count", 0)
+    )
+    return counts
+
+
+def _undo_parametric_plate(app, design, document, checkpoint):
+    root = safe_value(design, "rootComponent")
+    occurrences = safe_value(root, "occurrences")
+    expected_occurrence_token = checkpoint.get("occurrence_entity_token")
+    expected_component_token = checkpoint.get("component_entity_token")
+    parameter_names = checkpoint.get("parameter_names")
+    if (
+        occurrences is None
+        or not expected_occurrence_token
+        or not expected_component_token
+        or not isinstance(parameter_names, list)
+        or not parameter_names
+        or len(set(parameter_names)) != len(parameter_names)
+    ):
+        return _error(
+            "CHECKPOINT_ENTITY_NOT_FOUND",
+            "The parametric plate checkpoint is incomplete.",
+            retryable=True,
+        )
+
+    occurrence = next(
+        (
+            candidate
+            for candidate in iter_collection(occurrences)
+            if entity_token(candidate) == expected_occurrence_token
+            and entity_token(safe_value(candidate, "component"))
+            == expected_component_token
+        ),
+        None,
+    )
+    user_parameters = safe_value(design, "userParameters")
+    parameters = []
+    if occurrence is not None and user_parameters is not None:
+        for name in parameter_names:
+            parameter = user_parameters.itemByName(name)
+            if parameter is None:
+                parameters = []
+                break
+            parameters.append(parameter)
+    if occurrence is None or len(parameters) != len(parameter_names):
+        return _error(
+            "CHECKPOINT_ENTITY_NOT_FOUND",
+            "Every parametric plate entity in the checkpoint must still exist before Undo.",
+            retryable=True,
+        )
+
+    transaction_started = False
+    try:
+        if document is not None:
+            app.executeTextCommand('PTransaction.Start "Codex Undo Parametric Plate"')
+            transaction_started = True
+        if occurrence.deleteMe() is False:
+            raise RuntimeError("Fusion rejected the plate occurrence deletion.")
+        for parameter in reversed(parameters):
+            if parameter.deleteMe() is False:
+                raise RuntimeError("Fusion rejected a generated parameter deletion.")
+        if design.computeAll() is False:
+            raise RuntimeError("Fusion could not recompute after deleting the plate.")
+        counts = _design_counts(design)
+        starting_counts = checkpoint.get("starting_counts")
+        if isinstance(starting_counts, dict) and counts != starting_counts:
+            raise RuntimeError("The design did not return to its plate checkpoint counts.")
+        if transaction_started:
+            app.executeTextCommand("PTransaction.Commit")
+        return {
+            "isError": False,
+            "message": "The most recent Codex parametric plate was removed.",
+            "undone_request_id": checkpoint.get("request_id"),
+            "undo_mode": "parametric_plate_deleted",
+            "restored_counts": counts,
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Parametric plate and generated parameters removed; the design was recomputed.",
+                }
+            ],
+        }
+    except Exception:
+        _abort_transaction(app, transaction_started)
+        return _error(
+            "FUSION_API_ERROR",
+            "Fusion could not remove the checkpoint parametric plate.",
+            retryable=True,
+        )
+
+
 def undo_with(app, checkpoint):
     if app is None:
         return MCPError("FUSION_UNAVAILABLE", "Fusion 360 is not available.", True).to_result()
@@ -197,6 +291,8 @@ def undo_with(app, checkpoint):
     if design is None:
         return MCPError("NO_ACTIVE_DESIGN", "Open the checkpoint design first.", True).to_result()
 
+    if checkpoint.get("mutation") == "create_parametric_plate":
+        return _undo_parametric_plate(app, design, document, checkpoint)
     if checkpoint.get("mutation") == "create_orthographic_canvas_set":
         return _undo_reference_canvas_set(app, design, document, checkpoint)
     if checkpoint.get("mutation") == "create_reference_canvas":

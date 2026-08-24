@@ -444,12 +444,43 @@ class FakeDocument:
         self.isSaved = saved
 
 
+class FakeAllComponents:
+    def __init__(self, components):
+        self._roots = list(components)
+
+    def _current(self):
+        result = []
+        seen = set()
+
+        def add_component(component):
+            if component is None or id(component) in seen:
+                return
+            seen.add(id(component))
+            result.append(component)
+            for occurrence in getattr(component, "occurrences", ()):
+                add_component(getattr(occurrence, "component", None))
+
+        for component in self._roots:
+            add_component(component)
+        return result
+
+    @property
+    def count(self):
+        return len(self._current())
+
+    def item(self, index):
+        return self._current()[index]
+
+    def __iter__(self):
+        return iter(self._current())
+
+
 class FakeDesign:
     def __init__(self, components=(), parameters=(), document=None):
         components = list(components)
         self.rootComponent = components[0] if components else FakeComponent("Root", "root")
         self.activeComponent = self.rootComponent
-        self.allComponents = FakeCollection(components or [self.rootComponent])
+        self.allComponents = FakeAllComponents(components or [self.rootComponent])
         self.userParameters = FakeUserParameters(parameters)
         self.timeline = FakeTimeline(marker_position=2, count=2)
         self.unitsManager = FakeUnitsManager()

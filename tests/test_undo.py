@@ -7,6 +7,7 @@ from tests.fakes import (
     FakeCanvasInput,
     FakeComponent,
     FakeDesign,
+    FakeOccurrences,
 )
 
 
@@ -119,6 +120,82 @@ class UndoTests(unittest.TestCase):
         self.assertEqual(2, root.canvases.count)
         self.assertFalse(xy_canvas.deleted)
         self.assertFalse(unrelated.deleted)
+        self.assertEqual([], self.app.commands)
+
+    def _plate_checkpoint(self, occurrence, parameter_names):
+        return {
+            "document_id": self.design.parentDocument.id,
+            "request_id": "request-plate",
+            "mutation": "create_parametric_plate",
+            "occurrence_entity_token": occurrence.entityToken,
+            "component_entity_token": occurrence.component.entityToken,
+            "parameter_names": parameter_names,
+            "starting_counts": {
+                "components": 1,
+                "bodies": 0,
+                "sketches": 0,
+                "features": 0,
+                "user_parameters": 0,
+            },
+        }
+
+    def test_undo_parametric_plate_deletes_exact_occurrence_then_parameters(self):
+        root = self.design.rootComponent
+        root.occurrences = FakeOccurrences(
+            component_factory=lambda: FakeComponent("MountingPlate", "component-plate")
+        )
+        occurrence = root.occurrences.addNewComponent(object())
+        width = self.design.userParameters.add("plate_width", "100 mm", "mm", "plate")
+        height = self.design.userParameters.add("plate_height", "60 mm", "mm", "plate")
+        checkpoint = self._plate_checkpoint(
+            occurrence,
+            [width.name, height.name],
+        )
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertFalse(result["isError"])
+        self.assertEqual("parametric_plate_deleted", result["undo_mode"])
+        self.assertEqual(0, root.occurrences.count)
+        self.assertEqual(0, self.design.userParameters.count)
+        self.assertEqual(
+            ['PTransaction.Start "Codex Undo Parametric Plate"', "PTransaction.Commit"],
+            self.app.commands,
+        )
+
+    def test_undo_parametric_plate_refuses_missing_parameter_before_mutation(self):
+        root = self.design.rootComponent
+        root.occurrences = FakeOccurrences(
+            component_factory=lambda: FakeComponent("MountingPlate", "component-plate")
+        )
+        occurrence = root.occurrences.addNewComponent(object())
+        width = self.design.userParameters.add("plate_width", "100 mm", "mm", "plate")
+        checkpoint = self._plate_checkpoint(
+            occurrence,
+            [width.name, "plate_missing"],
+        )
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertEqual("CHECKPOINT_ENTITY_NOT_FOUND", result["error"]["code"])
+        self.assertEqual(1, root.occurrences.count)
+        self.assertEqual(1, self.design.userParameters.count)
+        self.assertEqual([], self.app.commands)
+
+    def test_undo_parametric_plate_refuses_component_token_mismatch(self):
+        root = self.design.rootComponent
+        root.occurrences = FakeOccurrences(
+            component_factory=lambda: FakeComponent("MountingPlate", "component-plate")
+        )
+        occurrence = root.occurrences.addNewComponent(object())
+        width = self.design.userParameters.add("plate_width", "100 mm", "mm", "plate")
+        checkpoint = self._plate_checkpoint(occurrence, [width.name])
+        checkpoint["component_entity_token"] = "wrong-component"
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertEqual("CHECKPOINT_ENTITY_NOT_FOUND", result["error"]["code"])
+        self.assertEqual(1, root.occurrences.count)
         self.assertEqual([], self.app.commands)
 
 
