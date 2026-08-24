@@ -21,6 +21,11 @@ class _PlaneWrapper:
         self.entityToken = token
 
 
+class _PlaneGeometry:
+    def __init__(self, x, y, z):
+        self.normal = type("Normal", (), {"x": x, "y": y, "z": z})()
+
+
 class ContextTests(unittest.TestCase):
     def setUp(self):
         body = FakeBody("Plate", "body-1", volume=30.0, maximum=(10.0, 6.0, 0.5))
@@ -88,6 +93,21 @@ class ContextTests(unittest.TestCase):
         )
         canvas = FakeCanvas(canvas_input, "canvas-2")
         canvas.name = "Wrapped Plane Reference"
+        root.canvases._items.append(canvas)
+
+        context = build_design_context(self.app, scope="all", limit=20)
+
+        self.assertEqual("xy", context["components"][0]["canvases"][0]["plane"])
+
+    def test_context_recognizes_principal_plane_from_canvas_normal(self):
+        root = self.design.rootComponent
+        canvas_input = FakeCanvasInput(
+            r"C:\reference\plate.png",
+            object(),
+        )
+        canvas = FakeCanvas(canvas_input, "canvas-3")
+        canvas.name = "Normal Based Reference"
+        canvas.plane = _PlaneGeometry(0.0, 0.0, 1.0)
         root.canvases._items.append(canvas)
 
         context = build_design_context(self.app, scope="all", limit=20)

@@ -2,7 +2,12 @@ import unittest
 
 import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.fusion.undo import undo_with
-from tests.fakes import FakeApp, FakeComponent, FakeDesign
+from tests.fakes import (
+    FakeApp,
+    FakeCanvasInput,
+    FakeComponent,
+    FakeDesign,
+)
 
 
 class UndoTests(unittest.TestCase):
@@ -29,6 +34,27 @@ class UndoTests(unittest.TestCase):
         self.assertFalse(result["isError"])
         self.assertEqual("Commands.Start UndoCommand", self.app.commands[-1])
         self.assertEqual("request-1", result["undone_request_id"])
+
+    def test_undo_reference_canvas_deletes_the_exact_checkpoint_canvas(self):
+        root = self.design.rootComponent
+        canvas = root.canvases.add(
+            FakeCanvasInput(r"C:\reference\plate.png", root.xYConstructionPlane)
+        )
+        canvas.name = "Reference Canvas"
+        checkpoint = {
+            "document_id": self.design.parentDocument.id,
+            "request_id": "request-canvas",
+            "mutation": "create_reference_canvas",
+            "canvas_name": "Reference Canvas",
+            "canvas_entity_token": canvas.entityToken,
+        }
+
+        result = undo_with(self.app, checkpoint)
+
+        self.assertFalse(result["isError"])
+        self.assertEqual(0, root.canvases.count)
+        self.assertEqual("canvas_deleted", result["undo_mode"])
+        self.assertNotIn("Commands.Start UndoCommand", self.app.commands)
 
 
 if __name__ == "__main__":

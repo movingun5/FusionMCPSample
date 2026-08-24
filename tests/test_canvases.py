@@ -64,7 +64,11 @@ class ReferenceCanvasTests(unittest.TestCase):
         self.assertEqual(100.0, content["canvas"]["width_mm"])
         self.assertEqual(50.0, content["canvas"]["height_mm"])
         self.assertNotIn(str(self.image_path.parent), repr(result))
-        self.assertEqual("create_reference_canvas", get_last_checkpoint()["mutation"])
+        checkpoint = get_last_checkpoint()
+        self.assertEqual("create_reference_canvas", checkpoint["mutation"])
+        self.assertEqual("Front Reference", checkpoint["canvas_name"])
+        self.assertEqual(canvas.entityToken, checkpoint["canvas_entity_token"])
+        self.assertEqual(self.root.entityToken, checkpoint["component_entity_token"])
 
     def test_selects_each_supported_principal_plane(self):
         for plane, attribute in (

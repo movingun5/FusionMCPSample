@@ -328,6 +328,9 @@ def create_reference_canvas(
                 "mutation": "create_reference_canvas",
                 "document_id": document_id,
                 "timeline_marker": timeline_marker,
+                "component_entity_token": entity_token(component),
+                "canvas_name": safe_value(canvas, "name", name),
+                "canvas_entity_token": entity_token(canvas),
             }
         )
         payload = {

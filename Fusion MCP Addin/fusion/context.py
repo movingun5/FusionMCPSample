@@ -105,6 +105,22 @@ def _canvas_plane(canvas, component):
             return plane
         if planar_name and candidate_name and planar_name == candidate_name:
             return plane
+    plane_geometry = safe_value(canvas, "plane")
+    normal = safe_value(plane_geometry, "normal")
+    if normal is not None:
+        try:
+            components = {
+                "yz": abs(float(safe_value(normal, "x", 0.0))),
+                "xz": abs(float(safe_value(normal, "y", 0.0))),
+                "xy": abs(float(safe_value(normal, "z", 0.0))),
+            }
+            plane = max(components, key=components.get)
+            dominant = components[plane]
+            remainder = sum(components.values()) - dominant
+            if dominant > 1e-9 and remainder <= dominant * 1e-6:
+                return plane
+        except (TypeError, ValueError):
+            pass
     return "unknown"
 
 
