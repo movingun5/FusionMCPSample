@@ -19,6 +19,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
    For an axis-aligned center-point rectangle on a principal construction plane, prefer `create_rectangle_sketch`. Give it a unique name and explicit Fusion expressions for width, height, and optional center coordinates.
    For a constant-radius edge round, prefer `create_fillet`. For an equal-distance bevel, prefer `create_chamfer`. Both tools accept a named solid body, a unique feature name, a positive Fusion length expression, and the stable selectors `all`, `top`, `bottom`, or `vertical`.
    For a new rectangular plate, bracket base, or mounting plate with circular through-holes and one optional outer fillet or chamfer, prefer `create_parametric_plate`; provide a safe parameter prefix and explicit expressions for every dimension.
+   For a dimensioned non-rectangular outline made only of straight segments, prefer `create_parametric_profile_extrusion`; pass 3–32 ordered named XY vertices without repeating the first vertex, plus a positive +Z depth expression. Use the plate tool instead when holes or supported edge finishes are required.
    For a one-direction repetition of an existing named feature, prefer `create_linear_pattern`. Choose X, Y, or Z, make the total quantity include the original, and use a non-zero adjacent-spacing expression; a negative spacing reverses direction.
 3. Capture `get_viewport_screenshot` before editing existing geometry. A verified blank design needs no before image.
 4. Resolve dimensions, placement, target, and success criteria. Use explicit units. Ask one question when missing information would alter geometry.
@@ -48,6 +49,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 | Chamfer | status → context → before image → create chamfer → context → after image |
 | Linear pattern | status → context → before image → create linear pattern → context → after image |
 | Parametric plate | status → context → create parametric plate → context → orthographic screenshots |
+| Parametric straight profile | status → context → create parametric profile extrusion → context → orthographic screenshots |
 | Image or drawing | status → image reference guide → all context → calibrated canvas → explicit tools → matching orthographic screenshots |
 | Other create | status → context → execute → context → screenshot |
 | Other edit | status → context → before image → execute → context → after image |

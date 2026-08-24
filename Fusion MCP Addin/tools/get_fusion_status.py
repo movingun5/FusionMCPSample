@@ -9,7 +9,7 @@ from ..mcp_primitives.registry import register
 from ..mcp_primitives.tool import Tool
 
 
-SERVER_VERSION = "2.2.0"
+SERVER_VERSION = "2.3.0"
 
 
 def handler():

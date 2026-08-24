@@ -23,6 +23,7 @@ from . import create_linear_pattern
 from . import create_reference_canvas
 from . import create_orthographic_canvas_set
 from . import create_parametric_plate
+from . import create_parametric_profile_extrusion
 from . import get_viewport_screenshot
 from . import undo_last_execution
 from . import export_design

@@ -29,6 +29,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **create_reference_canvas**: Place a local PNG/JPEG/TIFF on XY/XZ/YZ at a calibrated physical width while preserving its aspect ratio
 - **create_orthographic_canvas_set**: Atomically place 2–3 unique principal-view images, validate their shared X/Y/Z dimensions within tolerance, and record one whole-set Undo checkpoint
 - **create_parametric_plate**: Atomically create one centered XY rectangular plate with named driving parameters, 0–32 circular through-holes, and one optional vertical-edge fillet or chamfer
+- **create_parametric_profile_extrusion**: Atomically create one closed straight-line XY profile from 3–32 named parametric vertices and extrude it in +Z as a new body
 - **execute_fusion_python**: Execute risk-classified `run(context)` code with Fusion approval gates and post-run verification
 - **get_viewport_screenshot**: Capture conventional current, orthographic, and isometric views
 - **get_api_documentation**: Search the Fusion API documentation for classes, methods, properties, and descriptions
@@ -96,6 +97,8 @@ CAD files and the add-in remain local. Prompts, MCP results, error summaries, an
 For image- or drawing-based work, Codex interprets visible dimensions and geometry; the add-in does not perform OCR, automatic contour reconstruction, or perspective correction. The canvas tools read existing absolute local image paths and return only basenames and calibration metadata—not image bytes or full paths. A single image can be placed with `create_reference_canvas`; 2–3 unique XY/XZ/YZ views can be placed all-or-nothing with `create_orthographic_canvas_set`, which validates shared model dimensions before changing Fusion and removes the complete set with one checkpointed Undo.
 
 `create_parametric_plate` converts explicit dimensions into one reusable component at the root origin. In a Fusion Part Design document it builds in the single root component; in a Hybrid Design document it creates a child component. Width, height, thickness, every hole's signed center X/Y and diameter, and optional edge size become user parameters such as `plate_width` and `plate_upper_left_diameter`. The first version supports a centered rectangular XY plate, 0–32 non-touching circular distance-depth through-holes, and either one vertical-edge fillet, one equal-distance vertical-edge chamfer, or no edge finish. It validates all expressions, parameter-name collisions, plate boundaries, and hole overlap before mutation; any later failure rolls the complete generated entity and parameter set back.
+
+`create_parametric_profile_extrusion` turns an ordered 3–32 vertex outline extracted from a dimensioned drawing into one constrained XY sketch and a +Z NewBody extrusion. Every signed vertex coordinate and the depth is a named user parameter. It accepts clockwise or counterclockwise outlines, rejects duplicates, zero-area shapes, crossings, and touching non-adjacent segments before changing Fusion, and rolls back the whole result on failure. This first version supports one closed straight-line outer boundary only—no arcs, splines, internal holes, pockets, or automatic image tracing.
 
 ## License
 Samples are licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](LICENSE) file for full details.

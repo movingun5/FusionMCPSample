@@ -40,11 +40,11 @@ class ParametricPlateToolTests(unittest.TestCase):
         )
         self.assertEqual({"type": "none"}, edge_finish["default"])
 
-    def test_complete_catalog_contains_twenty_one_unique_tools(self):
+    def test_complete_catalog_contains_twenty_two_unique_tools(self):
         names = get_registry().get_tool_names()
 
-        self.assertEqual(21, len(names))
-        self.assertEqual(21, len(set(names)))
+        self.assertEqual(22, len(names))
+        self.assertEqual(22, len(set(names)))
         self.assertIn("create_parametric_plate", names)
 
 

@@ -15,13 +15,15 @@ Use this guide only when the user supplies an image, drawing, render, photo, or 
 6. Before calling the set tool, map XY to X/Y, XZ to X/Z, and YZ to Y/Z. If Codex's extracted shared dimensions disagree, report the conflicting values instead of invoking Fusion.
 7. Set each `width_expression` from a stated overall drawing width. Preserve the default aspect ratio. Use center offsets or flips only when the visible origin and orientation require them.
 8. When the drawing describes a rectangular plate, bracket base, or mounting plate with circular through-holes and at most one outer fillet or chamfer, call `create_parametric_plate` with only the structured dimensions after canvas and shared-dimension verification. The tool does not receive the image or its path.
-9. For other geometry, prefer the existing explicit Fusion tools for sketches, extrusions, holes, fillets, chamfers, patterns, and parameter edits. Use source-aware names such as `Front_Profile` or `Top_Hole_Row`.
-10. Verify numeric context first. Then capture every supplied top, front, or right viewport and compare proportions, placement, and repeated features with the corresponding reference. If any view or shared dimension is wrong, use one Undo to remove the complete canvas set before retrying.
-11. Report stated dimensions as exact only when Fusion measurements agree. Label estimates as estimates, and do not claim perspective-distorted or dimensionless geometry is exact.
+9. When the drawing instead describes one closed non-rectangular outer boundary made only of straight segments, call `create_parametric_profile_extrusion` with 3–32 ordered named XY vertices and a positive +Z depth. Do not repeat the first vertex. Do not use it for arcs, splines, holes, pockets, or an outline whose exact vertex coordinates are not dimensionally supported.
+10. For other geometry, prefer the existing explicit Fusion tools for sketches, extrusions, holes, fillets, chamfers, patterns, and parameter edits. Use source-aware names such as `Front_Profile` or `Top_Hole_Row`.
+11. Verify numeric context first. Then capture every supplied top, front, or right viewport and compare proportions, placement, and repeated features with the corresponding reference. If any view or shared dimension is wrong, use one Undo to remove the complete canvas set before retrying.
+12. Report stated dimensions as exact only when Fusion measurements agree. Label estimates as estimates, and do not claim perspective-distorted or dimensionless geometry is exact.
 
 ## Boundaries
 
 - A visible attachment in Codex and a Fusion-readable local path are separate requirements. If no local path is available, continue with dimension extraction and explicit modeling but do not claim a Fusion canvas was placed.
 - The add-in does not perform OCR, contour tracing, perspective correction, or photo reconstruction. Codex interprets the image; the MCP tool validates and places it.
+- The profile-extrusion tool receives structured dimension expressions only. It never receives the reference image or reconstructs an outline from pixels.
 - Both canvas tools accept only existing absolute local PNG, JPEG, or TIFF paths of at most 25 MiB and support only `xy`, `xz`, or `yz`. The set tool requires 2–3 unique planes, validates every shared axis within the requested tolerance before mutation, creates all canvases atomically, and records one whole-set Undo checkpoint.
 - Never expose the full local image path or image bytes in the final report. Use the basename and calibrated dimensions.

@@ -119,6 +119,12 @@ Create one complete rectangular plate centered on the root XY origin and extrude
 
 The tool generates user parameters `<prefix>_width`, `<prefix>_height`, `<prefix>_thickness`, `<prefix>_<hole-key>_x`, `_y`, `_diameter`, and optional `<prefix>_edge_size`. These parameters drive the profile, extrusion, hole positions and diameters, and edge feature. All expressions, generated-name conflicts, plate boundaries, and hole overlap are checked before Fusion changes. Container, parameters, sketches, body, holes, and edge finish are committed as one operation; a failed write is rolled back and one checkpointed Undo removes the whole successful part. The first version does not support Assembly Design external-part creation, slots, pockets, threaded/counterbored/countersunk holes, non-rectangular outlines, arbitrary placement, multiple bodies, or combined fillet and chamfer.
 
+### create_parametric_profile_extrusion
+
+Create one complete straight-line outline on the root XY plane and extrude it in +Z as a New Body. A Part Design document uses its single root component, while a Hybrid Design document receives a new child component. Supply `name`, a safe `parameter_prefix`, one positive `depth_expression`, and 3–32 ordered vertex objects. Each vertex has a unique safe `key` plus signed `x_expression` and `y_expression`; the tool closes the last point back to the first automatically.
+
+The tool generates `<prefix>_depth` first, then `<prefix>_<vertex-key>_x` and `_y` user parameters. It rejects repeated adjacent or closing points, duplicate keys, zero area, self-intersections, and non-adjacent touching segments before starting a Fusion transaction. The sketch, extrusion, body, component when applicable, and all parameters are one atomic operation with exact checkpointed Undo. The first version supports one straight-line outer loop only and does not support arcs, splines, internal holes, pockets, automatic contour tracing, or image bytes.
+
 ### execute_api_script
 
 Deprecated compatibility alias. New Codex workflows should use `execute_fusion_python` with `intent`, `code`, and `expected_changes`.
