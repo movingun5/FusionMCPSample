@@ -17,8 +17,9 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 ### Available Tools
 
 - **get_fusion_status**: Check Fusion, add-in, and active-design availability without exposing secrets
-- **get_design_context**: Read bounded component, body, parameter, and entity-token context
+- **get_design_context**: Read bounded component, body, user/model parameter, and entity-token context
 - **upsert_user_parameter**: Create or safely update one named user parameter with optional optimistic concurrency checking
+- **update_model_parameter**: Safely change one existing feature-owned dimension by exact feature name and parameter role
 - **create_rectangle_sketch**: Create a named center-point rectangle on XY/XZ/YZ with Fusion expressions as driving dimensions
 - **create_extrusion**: Extrude the largest closed profile in a named sketch as a named solid New Body using a Fusion distance expression
 - **create_simple_hole**: Create a named, parametrically positioned simple hole on a named solid body's planar +Z top face

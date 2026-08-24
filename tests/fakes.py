@@ -179,12 +179,21 @@ class FakeFeature:
 
 
 class FakeComponent:
-    def __init__(self, name, token, bodies=(), sketches=(), features=()):
+    def __init__(
+        self,
+        name,
+        token,
+        bodies=(),
+        sketches=(),
+        features=(),
+        model_parameters=(),
+    ):
         self.name = name
         self.entityToken = token
         self.bRepBodies = FakeCollection(bodies)
         self.sketches = FakeSketches(sketches)
         self.features = FakeCollection(features)
+        self.modelParameters = FakeCollection(model_parameters)
         self.xYConstructionPlane = object()
         self.xZConstructionPlane = object()
         self.yZConstructionPlane = object()
@@ -202,6 +211,24 @@ class FakeParameter:
     def deleteMe(self):
         self.deleted = True
         return True
+
+
+class FakeModelParameter(FakeParameter):
+    def __init__(
+        self,
+        name,
+        expression,
+        role,
+        created_by,
+        component=None,
+        unit="mm",
+        value=0.0,
+    ):
+        super().__init__(name, expression, unit=unit, value=value)
+        self.role = role
+        self.createdBy = created_by
+        self.component = component
+        self.entityToken = f"parameter-{name}"
 
 
 class FakeUserParameters(FakeCollection):

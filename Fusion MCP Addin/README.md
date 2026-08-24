@@ -81,6 +81,10 @@ For information and other setup options see the [mcp-remote documentation here](
 
 Once the add-in is running, the following MCP tools are available:
 
+### update_model_parameter
+
+Update one existing model parameter owned by a named feature. Read `model_parameters` with `get_design_context(scope="all")`, then pass the exact `created_by.name`, `role`, current `expression` as `expected_old_expression`, and the new Fusion expression. The edit is refused when the owner and role are missing or ambiguous, or when the expression changed after it was read. The first version targets the active component and requires an exact feature name.
+
 ### create_extrusion
 
 Create a named solid New Body from the largest closed profile in an existing named sketch. The distance is a Fusion expression such as `height` or `25 mm`; a negative value reverses direction. The tool rejects zero distance, missing or empty sketches, and duplicate extrusion names before modifying the design.

@@ -12,8 +12,9 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 ## Workflow
 
 1. Call `get_fusion_status`; stop if Fusion, authentication, or an active design is unavailable.
-2. Call `get_design_context` before modeling; use `scope="all"` for edits. It exposes components, bodies, counts, parameters, and bounds—not UI selections or per-hole geometry.
+2. Call `get_design_context` before modeling; use `scope="all"` for edits. It exposes components, bodies, counts, user parameters, feature-owned model parameters, and bounds—not UI selections or per-hole geometry.
    For user-parameter creation or edits, prefer `upsert_user_parameter` over arbitrary Python. Read the current expression first and pass it as `expected_old_expression` when updating an existing parameter.
+   For an existing feature dimension, prefer `update_model_parameter`. Choose one exact `created_by.name` and `role` from `model_parameters`, then pass its current expression as `expected_old_expression`. Stop on missing or ambiguous matches rather than guessing.
    For an axis-aligned center-point rectangle on a principal construction plane, prefer `create_rectangle_sketch`. Give it a unique name and explicit Fusion expressions for width, height, and optional center coordinates.
    For a constant-radius edge round, prefer `create_fillet`. For an equal-distance bevel, prefer `create_chamfer`. Both tools accept a named solid body, a unique feature name, a positive Fusion length expression, and the stable selectors `all`, `top`, `bottom`, or `vertical`.
    For a one-direction repetition of an existing named feature, prefer `create_linear_pattern`. Choose X, Y, or Z, make the total quantity include the original, and use a non-zero adjacent-spacing expression; a negative spacing reverses direction.
@@ -39,6 +40,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 | --- | --- |
 | Inspect | status → context → screenshot if useful |
 | Parameters | status → context → upsert parameter → context |
+| Existing feature dimension | status → all context → before image → update model parameter → all context → after image |
 | Rectangle sketch | status → context → create rectangle sketch → context → screenshot |
 | Fillet | status → context → before image → create fillet → context → after image |
 | Chamfer | status → context → before image → create chamfer → context → after image |

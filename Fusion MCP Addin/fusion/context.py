@@ -33,7 +33,7 @@ def _app_version(app):
     return None
 
 
-def get_status(app, server_version="1.8.0"):
+def get_status(app, server_version="1.9.0"):
     if app is None:
         return {
             "fusion_available": False,
@@ -69,6 +69,22 @@ def _parameter_summary(parameter):
     }
 
 
+def _model_parameter_summary(parameter, component):
+    owner = safe_value(parameter, "createdBy")
+    return {
+        "name": safe_value(parameter, "name", ""),
+        "expression": safe_value(parameter, "expression", ""),
+        "unit": safe_value(parameter, "unit", ""),
+        "role": safe_value(parameter, "role", ""),
+        "component": safe_value(component, "name", ""),
+        "created_by": {
+            "name": safe_value(owner, "name", ""),
+            "type": safe_value(owner, "objectType") or type(owner).__name__,
+            "entity_token": entity_token(owner),
+        },
+    }
+
+
 def _component_summary(component, limiter):
     bodies = []
     for body in iter_collection(safe_value(component, "bRepBodies")):
@@ -100,6 +116,7 @@ def build_design_context(app, scope="summary", limit=200):
     limiter = _Limiter(limit)
     components = []
     parameters = []
+    model_parameters = []
 
     if scope in {"summary", "components", "all"}:
         for component in iter_collection(safe_value(design, "allComponents")):
@@ -113,6 +130,17 @@ def build_design_context(app, scope="summary", limit=200):
                 break
             parameters.append(_parameter_summary(parameter))
 
+    if scope in {"parameters", "all"}:
+        for component in iter_collection(safe_value(design, "allComponents")):
+            for parameter in iter_collection(safe_value(component, "modelParameters")):
+                if not limiter.take():
+                    break
+                model_parameters.append(
+                    _model_parameter_summary(parameter, component)
+                )
+            if limiter.truncated:
+                break
+
     units_manager = safe_value(design, "unitsManager")
     return {
         "document": {
@@ -125,6 +153,7 @@ def build_design_context(app, scope="summary", limit=200):
         "active_component": safe_value(safe_value(design, "activeComponent"), "name"),
         "components": components,
         "parameters": parameters,
+        "model_parameters": model_parameters,
         "scope": scope,
         "limit": limit,
         "truncated": limiter.truncated,

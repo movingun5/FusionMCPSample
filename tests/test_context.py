@@ -2,7 +2,15 @@ import unittest
 
 import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from fusion_mcp_addin.fusion.context import build_design_context, get_status
-from tests.fakes import FakeApp, FakeBody, FakeComponent, FakeDesign, FakeParameter
+from tests.fakes import (
+    FakeApp,
+    FakeBody,
+    FakeComponent,
+    FakeDesign,
+    FakeFeature,
+    FakeModelParameter,
+    FakeParameter,
+)
 
 
 class ContextTests(unittest.TestCase):
@@ -29,7 +37,7 @@ class ContextTests(unittest.TestCase):
     def test_status_defaults_to_parameter_tool_server_version(self):
         status = get_status(self.app)
 
-        self.assertEqual("1.8.0", status["server_version"])
+        self.assertEqual("1.9.0", status["server_version"])
 
     def test_context_returns_components_bodies_and_parameters(self):
         context = build_design_context(self.app, scope="all", limit=20)
@@ -39,6 +47,41 @@ class ContextTests(unittest.TestCase):
         self.assertEqual("Plate", context["components"][0]["bodies"][0]["name"])
         self.assertEqual("100 mm", context["parameters"][0]["expression"])
         self.assertFalse(context["truncated"])
+
+    def test_context_returns_model_parameter_owner_and_role_for_edits(self):
+        feature = FakeFeature("Plate Extrusion", "feature-1")
+        parameter = FakeModelParameter(
+            "d12",
+            "10 mm",
+            "Distance",
+            feature,
+            component=self.design.rootComponent,
+            value=1.0,
+        )
+        self.design.rootComponent.features = type(
+            self.design.rootComponent.features
+        )([feature])
+        self.design.rootComponent.modelParameters = type(
+            self.design.rootComponent.modelParameters
+        )([parameter])
+
+        context = build_design_context(self.app, scope="all", limit=20)
+
+        self.assertEqual(
+            {
+                "name": "d12",
+                "expression": "10 mm",
+                "unit": "mm",
+                "role": "Distance",
+                "component": "Root",
+                "created_by": {
+                    "name": "Plate Extrusion",
+                    "type": "FakeFeature",
+                    "entity_token": "feature-1",
+                },
+            },
+            context["model_parameters"][0],
+        )
 
     def test_context_applies_limit_and_marks_truncation(self):
         context = build_design_context(self.app, scope="all", limit=1)

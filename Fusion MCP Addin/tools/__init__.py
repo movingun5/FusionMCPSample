@@ -13,6 +13,7 @@ from . import get_screenshot
 from . import get_fusion_status
 from . import get_design_context
 from . import upsert_user_parameter
+from . import update_model_parameter
 from . import create_rectangle_sketch
 from . import create_extrusion
 from . import create_simple_hole
