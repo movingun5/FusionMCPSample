@@ -201,12 +201,26 @@ class FusionProfileBuilder:
             sketch.isComputeDeferred = True
             profile_points = []
             names = evaluated["parameter_names"]["vertices"]
-            for vertex in evaluated["vertices"]:
+            seed_scale = max(
+                1.0,
+                *[
+                    abs(coordinate)
+                    for vertex in evaluated["vertices"]
+                    for coordinate in (vertex["x_cm"], vertex["y_cm"])
+                ],
+            )
+            vertex_count = len(evaluated["vertices"])
+            for index, vertex in enumerate(evaluated["vertices"]):
                 if abs(vertex["x_cm"]) <= 1e-9 and abs(vertex["y_cm"]) <= 1e-9:
                     point = sketch.originPoint
                 else:
+                    seed_fraction = (index + 1.0) / (vertex_count + 1.0)
                     point = sketch.sketchPoints.add(
-                        self.point_factory(vertex["x_cm"], vertex["y_cm"], 0.0)
+                        self.point_factory(
+                            seed_scale * (3.0 + seed_fraction),
+                            seed_scale * (5.0 + seed_fraction),
+                            0.0,
+                        )
                     )
                     if point is None:
                         raise RuntimeError("Fusion did not create a profile sketch point.")

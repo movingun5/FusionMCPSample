@@ -189,7 +189,7 @@ class ProfileBuilderTests(unittest.TestCase):
         self.assertEqual(10, len(expressions))
         self.assertEqual(2, len(result["profile_sketch"].geometricConstraints._items))
 
-    def test_removes_axis_constraints_inferred_while_adding_repeated_coordinates(self):
+    def test_seeds_points_away_from_repeated_target_axes_before_dimensioning(self):
         self.design.designIntent = "PartDesignIntentType"
         self.root.features = _Features(self.root)
         self.root.sketches = _AxisInferringSketches()
@@ -197,8 +197,7 @@ class ProfileBuilderTests(unittest.TestCase):
         result = self.builder().build("LProfile", self.evaluated())
         inferred = result["profile_sketch"].sketchPoints.inferred_constraints
 
-        self.assertGreater(len(inferred), 0)
-        self.assertTrue(all(constraint.deleted for constraint in inferred))
+        self.assertEqual([], inferred)
 
     def test_rolls_back_hybrid_occurrence_and_parameters_after_extrusion_failure(self):
         self.root.occurrences = FakeOccurrences(
