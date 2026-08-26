@@ -202,6 +202,35 @@ class FusionPlateBuilder:
             )
             if lines is None or safe_value(lines, "count", 0) != 4:
                 raise RuntimeError("Fusion did not create four profile lines.")
+            endpoints = [
+                point
+                for line in lines
+                for point in (line.startSketchPoint, line.endSketchPoint)
+            ]
+            opposite_points = max(
+                (
+                    (left, right)
+                    for left in endpoints
+                    for right in endpoints
+                ),
+                key=lambda pair: (
+                    (pair[0].geometry.x - pair[1].geometry.x) ** 2
+                    + (pair[0].geometry.y - pair[1].geometry.y) ** 2
+                ),
+            )
+            center_diagonal = sketch.sketchCurves.sketchLines.addByTwoPoints(
+                opposite_points[0],
+                opposite_points[1],
+            )
+            if center_diagonal is None:
+                raise RuntimeError("Fusion did not create the profile center diagonal.")
+            center_diagonal.isConstruction = True
+            center_constraint = sketch.geometricConstraints.addMidPoint(
+                sketch.originPoint,
+                center_diagonal,
+            )
+            if center_constraint is None:
+                raise RuntimeError("Fusion did not constrain the plate center to the origin.")
             horizontal, vertical = _dimension_lines(lines)
             offset = max(width, height) * 0.15
             width_dimension = sketch.sketchDimensions.addDistanceDimension(

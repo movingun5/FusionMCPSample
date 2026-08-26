@@ -356,6 +356,27 @@ class PlateBuilderTests(unittest.TestCase):
         self.assertIsNone(result["edge_feature"])
         self.assertEqual(3, self.design.userParameters.count)
 
+    def test_constrains_profile_center_to_origin_for_later_dimension_updates(self):
+        evaluated = self.evaluated(holes=[], edge_finish={"type": "none"})
+        result = self.builder().build("MountingPlate", evaluated)
+        sketch = result["profile_sketch"]
+        construction_lines = [
+            line
+            for line in sketch.sketchCurves.sketchLines
+            if line.isConstruction
+        ]
+        midpoint_constraints = [
+            constraint
+            for constraint in sketch.geometricConstraints
+            if constraint[0] == "midpoint"
+        ]
+
+        self.assertEqual(1, len(construction_lines))
+        self.assertEqual(
+            [("midpoint", sketch.originPoint, construction_lines[0])],
+            midpoint_constraints,
+        )
+
     def test_builds_chamfer_on_only_vertical_outer_edges(self):
         evaluated = self.evaluated(
             holes=[],

@@ -56,6 +56,7 @@ class FakeSketchLine:
         self.endSketchPoint = (
             end if isinstance(end, FakeSketchPoint) else FakeSketchPoint(end)
         )
+        self.isConstruction = False
 
 
 class FakeSketchLines(FakeCollection):
@@ -132,6 +133,11 @@ class FakeGeometricConstraints(FakeCollection):
 
     def addHorizontalPoints(self, point_one, point_two):
         constraint = ("horizontal-points", point_one, point_two)
+        self._items.append(constraint)
+        return constraint
+
+    def addMidPoint(self, point, curve):
+        constraint = ("midpoint", point, curve)
         self._items.append(constraint)
         return constraint
 

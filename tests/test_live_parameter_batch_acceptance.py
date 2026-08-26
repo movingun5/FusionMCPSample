@@ -83,10 +83,24 @@ class LiveParameterBatchAcceptanceTests(unittest.TestCase):
                     width = "60 mm" if self.batch_active else "40 mm"
                     thickness = "6 mm" if self.batch_active else "4 mm"
                     size = [60.0, 30.0, 6.0] if self.batch_active else [40.0, 30.0, 4.0]
+                    half_width = size[0] / 2.0
+                    half_height = size[1] / 2.0
                     return {
                         "structuredContent": {
                             "components": [
-                                {"name": "Root", "bodies": [{"name": "BatchPlate", "size_mm": size}]}
+                                {
+                                    "name": "Root",
+                                    "bodies": [
+                                        {
+                                            "name": "BatchPlate",
+                                            "size_mm": size,
+                                            "bounding_box_mm": {
+                                                "min": [-half_width, -half_height, 0.0],
+                                                "max": [half_width, half_height, size[2]],
+                                            },
+                                        }
+                                    ],
+                                }
                             ],
                             "parameters": [
                                 {"name": "batch_plate_width", "expression": width},

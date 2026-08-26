@@ -100,9 +100,19 @@ def _parameter_expressions(context):
 def _matches_state(context, size_mm, width, thickness):
     body = _find_body(context, "BatchPlate")
     expressions = _parameter_expressions(context)
+    bounds = (body or {}).get("bounding_box_mm", {})
+    minimum = bounds.get("min", [])
+    maximum = bounds.get("max", [])
+    centered = (
+        len(minimum) == 3
+        and len(maximum) == 3
+        and abs(float(minimum[0]) + float(maximum[0])) <= 0.01
+        and abs(float(minimum[1]) + float(maximum[1])) <= 0.01
+    )
     return (
         body is not None
         and body.get("size_mm") == size_mm
+        and centered
         and expressions.get("batch_plate_width") == width
         and expressions.get("batch_plate_height") == "30 mm"
         and expressions.get("batch_plate_thickness") == thickness
