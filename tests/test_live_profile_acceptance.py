@@ -10,6 +10,7 @@ from unittest.mock import patch
 import tests  # noqa: F401 - installs the Fusion package test bootstrap
 from scripts.live_profile_acceptance import (
     REQUIRED_TOOLS,
+    build_drawing_plan_arguments,
     build_profile_arguments,
     run_acceptance,
     sanitize_report_value,
@@ -58,6 +59,22 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
         self.assertNotIn("image", repr(arguments).lower())
         self.assertNotIn("code", arguments)
 
+    def test_drawing_plan_arguments_mark_every_visible_dimension_as_stated(self):
+        arguments = build_drawing_plan_arguments()
+
+        self.assertEqual("LProfile", arguments["name"])
+        self.assertEqual("straight_profile", arguments["geometry"]["type"])
+        self.assertEqual(["xy", "xz"], [view["plane"] for view in arguments["views"]])
+        self.assertEqual(
+            {"stated"},
+            {
+                source
+                for view in arguments["views"]
+                for source in (view["width_source"], view["height_source"])
+            },
+        )
+        self.assertEqual([], arguments["unsupported_features"])
+
     def test_report_sanitizer_removes_images_absolute_paths_and_secrets(self):
         secret = "test-bearer-token"
         value = {
@@ -88,10 +105,10 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
             def call(self, method, _params=None):
                 self.calls.append(method)
                 if method == "initialize":
-                    return {"serverInfo": {"name": "fusion", "version": "2.3.0"}}
+                    return {"serverInfo": {"name": "fusion", "version": "2.4.0"}}
                 if method == "tools/list":
                     names = sorted(REQUIRED_TOOLS) + [
-                        f"dummy_{index}" for index in range(22 - len(REQUIRED_TOOLS))
+                        f"dummy_{index}" for index in range(23 - len(REQUIRED_TOOLS))
                     ]
                     return {"tools": [{"name": name} for name in names]}
                 raise AssertionError(method)
@@ -104,7 +121,7 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
                         "structuredContent": {
                             "fusion_available": True,
                             "active_design": True,
-                            "server_version": "2.3.0",
+                            "server_version": "2.4.0",
                             "fusion_version": "2704.1.53",
                         }
                     }
@@ -158,6 +175,16 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
                             ],
                         }
                     }
+                if name == "validate_drawing_modeling_plan":
+                    return {
+                        "structuredContent": {
+                            "ready_for_modeling": True,
+                            "mutation_performed": False,
+                            "target_tool": "create_parametric_profile_extrusion",
+                            "tool_arguments": build_profile_arguments(),
+                            "blockers": [],
+                        }
+                    }
                 if name == "create_parametric_profile_extrusion":
                     if arguments.get("name") == "BowTieInvalid":
                         return {"isError": True, "error": {"code": "PROFILE_SELF_INTERSECTION"}}
@@ -206,6 +233,7 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
         self.assertTrue(report["ok"])
         self.assertEqual("initialize", calls[0])
         self.assertEqual("tools/list", calls[1])
+        self.assertLess(calls.index("validate_drawing_modeling_plan"), calls.index("create_orthographic_canvas_set"))
         self.assertLess(calls.index("create_orthographic_canvas_set"), calls.index("create_parametric_profile_extrusion"))
         self.assertLess(calls.index("create_parametric_profile_extrusion"), calls.index("undo_last_execution"))
         self.assertNotIn("execute_fusion_python", calls)

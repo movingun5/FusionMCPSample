@@ -24,6 +24,7 @@ from . import create_reference_canvas
 from . import create_orthographic_canvas_set
 from . import create_parametric_plate
 from . import create_parametric_profile_extrusion
+from . import validate_drawing_modeling_plan
 from . import get_viewport_screenshot
 from . import undo_last_execution
 from . import export_design

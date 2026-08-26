@@ -1,6 +1,6 @@
 # Live Fusion validation status
 
-- Date: 2026-08-25
+- Date: 2026-08-26
 - Automated environment: Windows, Python 3.14, Fusion API replaced by test fakes
 - Live Fusion user-parameter status: **passed on Fusion 2704.1.53**
 - Live rectangle-sketch status: **passed on Fusion 2704.1.53**
@@ -14,6 +14,7 @@
 - Live orthographic canvas-set status: **passed on Fusion 2704.1.53 with server 2.1.0**
 - Live parametric-plate status: **passed on Fusion 2704.1.53 with server 2.2.0; MCP Redo not exposed**
 - Live parametric-profile-extrusion status: **passed on Fusion 2704.1.53 with server 2.3.0**
+- Live drawing-modeling-plan preflight status: **automated pass; server 2.4.0 restart required**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **passed**
 
@@ -21,7 +22,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **230 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds a 22-tool registry and unit coverage for strict straight-profile validation, Part and Hybrid routing, parameter-driven vertex geometry, repeated-axis and signed-coordinate seeding, failure rollback, exact profile Undo, deterministic 1200×800 Top/Front drawing fixtures, and a path/token/image-redacted explicit-tool live harness. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
+Current result: **244 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds straight-profile creation and its live evidence. Server 2.4.0 adds a 23-tool registry and pure drawing-plan coverage for one to three views, stated/estimated/missing evidence, required stated X/Y/Z axes, shared-axis conflicts, proposed-model bounds, plate/profile routing, null-blocked dimensions, unsupported features, reused plate/profile geometry safety, non-mutation, strict MCP schema, and explicit-tool harness handoff. Live 2.4.0 validation remains pending a Fusion restart. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
 
 Run:
 

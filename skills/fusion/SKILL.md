@@ -14,6 +14,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 1. Call `get_fusion_status`; stop if Fusion, authentication, or an active design is unavailable.
 2. Call `get_design_context` before modeling; use `scope="all"` for edits. It exposes components, bodies, counts, user parameters, feature-owned model parameters, and bounds—not UI selections or per-hole geometry.
    For image- or drawing-based modeling, read [references/image-modeling.md](references/image-modeling.md) before interpreting the reference or changing Fusion.
+   After extracting drawing dimensions, call `validate_drawing_modeling_plan` before placing canvases or creating geometry. Continue only when it returns `ready_for_modeling=true`; use its returned `target_tool` and `tool_arguments` unchanged.
    For user-parameter creation or edits, prefer `upsert_user_parameter` over arbitrary Python. Read the current expression first and pass it as `expected_old_expression` when updating an existing parameter.
    For an existing feature dimension, prefer `update_model_parameter`. Choose one exact `created_by.name` and `role` from `model_parameters`, then pass its current expression as `expected_old_expression`. Stop on missing or ambiguous matches rather than guessing.
    For an axis-aligned center-point rectangle on a principal construction plane, prefer `create_rectangle_sketch`. Give it a unique name and explicit Fusion expressions for width, height, and optional center coordinates.
@@ -50,7 +51,7 @@ Translate natural-language CAD intent into verifiable changes through `fusion360
 | Linear pattern | status → context → before image → create linear pattern → context → after image |
 | Parametric plate | status → context → create parametric plate → context → orthographic screenshots |
 | Parametric straight profile | status → context → create parametric profile extrusion → context → orthographic screenshots |
-| Image or drawing | status → image reference guide → all context → calibrated canvas → explicit tools → matching orthographic screenshots |
+| Image or drawing | status → image reference guide → all context → drawing-plan preflight → calibrated canvas → returned explicit tool → matching orthographic screenshots |
 | Other create | status → context → execute → context → screenshot |
 | Other edit | status → context → before image → execute → context → after image |
 | Recover | undo → context → screenshot |

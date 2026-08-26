@@ -19,7 +19,7 @@ else:
 
 
 EXPECTED_FUSION_VERSION = "2704.1.53"
-EXPECTED_SERVER_VERSION = "2.3.0"
+EXPECTED_SERVER_VERSION = "2.4.0"
 EXPECTED_PROFILE_MM = [100.0, 60.0, 8.0]
 EXPECTED_PARAMETER_NAMES = [
     "l_profile_depth",
@@ -32,6 +32,7 @@ EXPECTED_PARAMETER_NAMES = [
 REQUIRED_TOOLS = {
     "get_fusion_status",
     "get_design_context",
+    "validate_drawing_modeling_plan",
     "create_orthographic_canvas_set",
     "create_parametric_profile_extrusion",
     "get_viewport_screenshot",
@@ -54,6 +55,43 @@ def build_profile_arguments():
             {"key": "p6", "x_expression": "-50 mm", "y_expression": "0 mm"},
         ],
         "depth_expression": "8 mm",
+    }
+
+
+def build_drawing_plan_arguments():
+    return {
+        "name": "LProfile",
+        "parameter_prefix": "l_profile",
+        "views": [
+            {
+                "plane": "xy",
+                "width_mm": 100.0,
+                "height_mm": 60.0,
+                "width_source": "stated",
+                "height_source": "stated",
+            },
+            {
+                "plane": "xz",
+                "width_mm": 100.0,
+                "height_mm": 8.0,
+                "width_source": "stated",
+                "height_source": "stated",
+            },
+        ],
+        "geometry": {
+            "type": "straight_profile",
+            "vertices": [
+                {"key": "p1", "x_mm": -50.0, "y_mm": -30.0},
+                {"key": "p2", "x_mm": 50.0, "y_mm": -30.0},
+                {"key": "p3", "x_mm": 50.0, "y_mm": 30.0},
+                {"key": "p4", "x_mm": 10.0, "y_mm": 30.0},
+                {"key": "p5", "x_mm": 10.0, "y_mm": 0.0},
+                {"key": "p6", "x_mm": -50.0, "y_mm": 0.0},
+            ],
+            "depth_mm": 8.0,
+        },
+        "dimension_tolerance_mm": 0.01,
+        "unsupported_features": [],
     }
 
 
@@ -206,10 +244,10 @@ def run_acceptance(url, token, export_dir, top_image, front_image):
 
         listed = client.call("tools/list", {})
         names = [tool.get("name") for tool in listed.get("tools", [])]
-        tools_ok = len(names) == 22 and len(set(names)) == 22 and REQUIRED_TOOLS <= set(names)
+        tools_ok = len(names) == 23 and len(set(names)) == 23 and REQUIRED_TOOLS <= set(names)
         _record(
             steps,
-            "server_2_3_tool_catalog",
+            "server_2_4_tool_catalog",
             tools_ok,
             {"count": len(names), "present": sorted(names), "missing": sorted(REQUIRED_TOOLS - set(names))},
             secrets=secrets,
@@ -234,6 +272,23 @@ def run_acceptance(url, token, export_dir, top_image, front_image):
         )
         _record(steps, "blank_design_context", blank_ok, context_before_result, secrets=secrets)
         if not (tools_ok and status_ok and blank_ok):
+            raise _AcceptanceStopped()
+
+        plan_result = client.tool(
+            "validate_drawing_modeling_plan",
+            build_drawing_plan_arguments(),
+        )
+        plan_data = structured(plan_result)
+        plan_ok = (
+            not plan_result.get("isError", False)
+            and plan_data.get("ready_for_modeling") is True
+            and plan_data.get("mutation_performed") is False
+            and plan_data.get("target_tool") == "create_parametric_profile_extrusion"
+            and plan_data.get("tool_arguments") == build_profile_arguments()
+            and plan_data.get("blockers") == []
+        )
+        _record(steps, "drawing_plan_preflight", plan_ok, plan_result, secrets=secrets)
+        if not plan_ok:
             raise _AcceptanceStopped()
 
         canvas_result = client.tool(
@@ -261,7 +316,7 @@ def run_acceptance(url, token, export_dir, top_image, front_image):
 
         profile_result = client.tool(
             "create_parametric_profile_extrusion",
-            build_profile_arguments(),
+            plan_data["tool_arguments"],
         )
         profile_data = structured(profile_result)
         context_created_result = client.tool("get_design_context", {"scope": "all", "limit": 400})
