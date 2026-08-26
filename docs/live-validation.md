@@ -15,6 +15,7 @@
 - Live parametric-plate status: **passed on Fusion 2704.1.53 with server 2.2.0; MCP Redo not exposed**
 - Live parametric-profile-extrusion status: **passed on Fusion 2704.1.53 with server 2.3.0**
 - Live drawing-modeling-plan preflight status: **passed on Fusion 2704.1.53 with server 2.4.0**
+- Live atomic parameter-batch status: **automated pass; server 2.5.0 restart required**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **passed**
 
@@ -22,7 +23,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **244 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds straight-profile creation and its live evidence. Server 2.4.0 adds a 23-tool registry and pure drawing-plan coverage for one to three views, stated/estimated/missing evidence, required stated X/Y/Z axes, shared-axis conflicts, proposed-model bounds, plate/profile routing, null-blocked dimensions, unsupported features, reused plate/profile geometry safety, non-mutation, strict MCP schema, and explicit-tool harness handoff. Live server 2.4.0 validation passed all 16 checks on Fusion 2704.1.53. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
+Current result: **254 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds straight-profile creation and its live evidence. Server 2.4.0 adds a 23-tool registry and pure drawing-plan coverage for one to three views, stated/estimated/missing evidence, required stated X/Y/Z axes, shared-axis conflicts, proposed-model bounds, plate/profile routing, null-blocked dimensions, unsupported features, reused plate/profile geometry safety, non-mutation, strict MCP schema, and explicit-tool harness handoff. Live server 2.4.0 validation passed all 16 checks on Fusion 2704.1.53. Server 2.5.0 adds a 24-tool registry and atomic 1–16 item batches across existing user and feature-owned model parameters, with duplicate-target rejection, compare-and-swap conflicts, expression validation, one recompute, complete rollback, and one Undo checkpoint. Live 2.5.0 validation remains pending a Fusion restart. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
 
 Run:
 
@@ -30,6 +31,7 @@ Run:
 python -m unittest discover -s tests -v
 python -m compileall -q "Fusion MCP Addin" scripts tests
 python scripts/check_install.py --addon-path "Fusion MCP Addin"
+python scripts/live_parameter_batch_acceptance.py --confirm-blank-design --report docs/live-parameter-batch-validation-result.json
 ```
 
 ## Live user-parameter evidence

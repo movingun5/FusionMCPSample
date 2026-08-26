@@ -28,10 +28,11 @@ class ParametricProfileToolTests(unittest.TestCase):
     def test_complete_catalog_contains_twenty_three_unique_tools(self):
         names = get_registry().get_tool_names()
 
-        self.assertEqual(23, len(names))
-        self.assertEqual(23, len(set(names)))
+        self.assertEqual(24, len(names))
+        self.assertEqual(24, len(set(names)))
         self.assertIn("create_parametric_profile_extrusion", names)
         self.assertIn("validate_drawing_modeling_plan", names)
+        self.assertIn("update_parameter_batch", names)
 
     def test_handler_forwards_the_active_app_and_all_arguments(self):
         app = object()

@@ -19,7 +19,7 @@ else:
 
 
 EXPECTED_FUSION_VERSION = "2704.1.53"
-EXPECTED_SERVER_VERSION = "2.4.0"
+EXPECTED_SERVER_VERSION = "2.5.0"
 EXPECTED_PROFILE_MM = [100.0, 60.0, 8.0]
 EXPECTED_PARAMETER_NAMES = [
     "l_profile_depth",
@@ -33,6 +33,7 @@ REQUIRED_TOOLS = {
     "get_fusion_status",
     "get_design_context",
     "validate_drawing_modeling_plan",
+    "update_parameter_batch",
     "create_orthographic_canvas_set",
     "create_parametric_profile_extrusion",
     "get_viewport_screenshot",
@@ -244,10 +245,10 @@ def run_acceptance(url, token, export_dir, top_image, front_image):
 
         listed = client.call("tools/list", {})
         names = [tool.get("name") for tool in listed.get("tools", [])]
-        tools_ok = len(names) == 23 and len(set(names)) == 23 and REQUIRED_TOOLS <= set(names)
+        tools_ok = len(names) == 24 and len(set(names)) == 24 and REQUIRED_TOOLS <= set(names)
         _record(
             steps,
-            "server_2_4_tool_catalog",
+            "server_2_5_tool_catalog",
             tools_ok,
             {"count": len(names), "present": sorted(names), "missing": sorted(REQUIRED_TOOLS - set(names))},
             secrets=secrets,

@@ -85,6 +85,10 @@ Once the add-in is running, the following MCP tools are available:
 
 Update one existing model parameter owned by a named feature. Read `model_parameters` with `get_design_context(scope="all")`, then pass the exact `created_by.name`, `role`, current `expression` as `expected_old_expression`, and the new Fusion expression. The edit is refused when the owner and role are missing or ambiguous, or when the expression changed after it was read. The first version targets the active component and requires an exact feature name.
 
+### update_parameter_batch
+
+Update 1–16 existing user parameters and feature-owned model parameters in one atomic operation. Each user target supplies its exact `name`; each model target supplies the exact owning `feature_name` and parameter `role`. Every item also supplies a new `expression` and the exact current `expected_old_expression`. The server resolves and validates every target before starting one transaction, rejects duplicate or stale targets without mutation, recomputes once, rolls every expression back if the batch fails, and records one Undo checkpoint when it succeeds. It does not create missing parameters or infer selectors from prose.
+
 ### create_extrusion
 
 Create a named solid New Body from the largest closed profile in an existing named sketch. The distance is a Fusion expression such as `height` or `25 mm`; a negative value reverses direction. The tool rejects zero distance, missing or empty sketches, and duplicate extrusion names before modifying the design.

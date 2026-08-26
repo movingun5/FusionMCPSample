@@ -20,6 +20,7 @@ A Fusion add-in that provides HTTP API functionality for Model Context Protocol 
 - **get_design_context**: Read bounded component, body, user/model parameter, and entity-token context
 - **upsert_user_parameter**: Create or safely update one named user parameter with optional optimistic concurrency checking
 - **update_model_parameter**: Safely change one existing feature-owned dimension by exact feature name and parameter role
+- **update_parameter_batch**: Atomically update 1–16 existing user or feature-owned model parameters with all-target prevalidation and one Undo
 - **create_rectangle_sketch**: Create a named center-point rectangle on XY/XZ/YZ with Fusion expressions as driving dimensions
 - **create_extrusion**: Extrude the largest closed profile in a named sketch as a named solid New Body using a Fusion distance expression
 - **create_simple_hole**: Create a named, parametrically positioned simple hole on a named solid body's planar +Z top face
@@ -91,6 +92,12 @@ After opening a new blank Fusion design, run the live phase-1 acceptance flow:
 python scripts/live_acceptance.py --confirm-blank-design --report docs/live-validation-result.json
 ```
 
+For the server 2.5.0 existing-model parameter-batch check, open another blank design and run:
+
+```powershell
+python scripts/live_parameter_batch_acceptance.py --confirm-blank-design --report docs/live-parameter-batch-validation-result.json
+```
+
 See [live validation status](docs/live-validation.md). A missing live run is reported as unverified, never as a pass.
 
 CAD files and the add-in remain local. Prompts, MCP results, error summaries, and screenshots supplied to Codex may be sent to OpenAI's model service.
@@ -98,6 +105,8 @@ CAD files and the add-in remain local. Prompts, MCP results, error summaries, an
 For image- or drawing-based work, Codex interprets visible dimensions and geometry; the add-in does not perform OCR, automatic contour reconstruction, or perspective correction. The canvas tools read existing absolute local image paths and return only basenames and calibration metadata—not image bytes or full paths. A single image can be placed with `create_reference_canvas`; 2–3 unique XY/XZ/YZ views can be placed all-or-nothing with `create_orthographic_canvas_set`, which validates shared model dimensions before changing Fusion and removes the complete set with one checkpointed Undo.
 
 `validate_drawing_modeling_plan` is the non-mutating handoff between Codex image interpretation and Fusion creation. It accepts one to three principal views with numeric millimeter dimensions labeled `stated`, `estimated`, or `missing`, rejects contradictory shared dimensions, and compares the proposed model's X/Y/Z bounds with stated drawing evidence. Exact, supported plans return ready-to-call arguments for `create_parametric_plate` or `create_parametric_profile_extrusion`; estimates, missing values, and unsupported features return blockers and no creation arguments. It never receives an image path or image bytes.
+
+`update_parameter_batch` is the first explicit existing-model natural-language editing primitive. Codex resolves the user's intent against `get_design_context(scope="all")`, then submits exact existing user-parameter names or exact model-parameter `feature_name + role` selectors. Every old expression and every new expression is checked before mutation; duplicate, missing, ambiguous, stale, or unit-incompatible targets stop the whole request. Successful mixed batches recompute once, commit once, and produce one Undo checkpoint. The tool does not guess targets from prose or create missing parameters.
 
 `create_parametric_plate` converts explicit dimensions into one reusable component at the root origin. In a Fusion Part Design document it builds in the single root component; in a Hybrid Design document it creates a child component. Width, height, thickness, every hole's signed center X/Y and diameter, and optional edge size become user parameters such as `plate_width` and `plate_upper_left_diameter`. The first version supports a centered rectangular XY plate, 0–32 non-touching circular distance-depth through-holes, and either one vertical-edge fillet, one equal-distance vertical-edge chamfer, or no edge finish. It validates all expressions, parameter-name collisions, plate boundaries, and hole overlap before mutation; any later failure rolls the complete generated entity and parameter set back.
 

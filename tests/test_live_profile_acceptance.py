@@ -105,10 +105,10 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
             def call(self, method, _params=None):
                 self.calls.append(method)
                 if method == "initialize":
-                    return {"serverInfo": {"name": "fusion", "version": "2.4.0"}}
+                    return {"serverInfo": {"name": "fusion", "version": "2.5.0"}}
                 if method == "tools/list":
                     names = sorted(REQUIRED_TOOLS) + [
-                        f"dummy_{index}" for index in range(23 - len(REQUIRED_TOOLS))
+                        f"dummy_{index}" for index in range(24 - len(REQUIRED_TOOLS))
                     ]
                     return {"tools": [{"name": name} for name in names]}
                 raise AssertionError(method)
@@ -121,7 +121,7 @@ class LiveProfileAcceptanceTests(unittest.TestCase):
                         "structuredContent": {
                             "fusion_available": True,
                             "active_design": True,
-                            "server_version": "2.4.0",
+                            "server_version": "2.5.0",
                             "fusion_version": "2704.1.53",
                         }
                     }

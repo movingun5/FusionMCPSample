@@ -43,8 +43,9 @@ class ParametricPlateToolTests(unittest.TestCase):
     def test_complete_catalog_contains_twenty_three_unique_tools(self):
         names = get_registry().get_tool_names()
 
-        self.assertEqual(23, len(names))
-        self.assertEqual(23, len(set(names)))
+        self.assertEqual(24, len(names))
+        self.assertEqual(24, len(set(names)))
+        self.assertIn("update_parameter_batch", names)
         self.assertIn("create_parametric_plate", names)
 
 

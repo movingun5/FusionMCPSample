@@ -7,3 +7,4 @@ venv
 .env
 cache
 docs/live-profile-validation-result.json
+docs/live-parameter-batch-validation-result.json
