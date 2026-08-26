@@ -14,7 +14,7 @@
 - Live orthographic canvas-set status: **passed on Fusion 2704.1.53 with server 2.1.0**
 - Live parametric-plate status: **passed on Fusion 2704.1.53 with server 2.2.0; MCP Redo not exposed**
 - Live parametric-profile-extrusion status: **passed on Fusion 2704.1.53 with server 2.3.0**
-- Live drawing-modeling-plan preflight status: **automated pass; server 2.4.0 restart required**
+- Live drawing-modeling-plan preflight status: **passed on Fusion 2704.1.53 with server 2.4.0**
 - ChatGPT desktop Codex to authenticated local MCP status: **passed**
 - Phase-1 mounting-plate geometry acceptance: **passed**
 
@@ -22,7 +22,7 @@
 
 The repository test suite covers policy classification, audit redaction, bearer authentication, authenticated HTTP initialization, design context, snapshots, unit conversion, risk-gated execution, parameter upsert and rollback behavior, recompute failure, STEP/STL export validation, undo behavior, install diagnostics, and live-harness construction.
 
-Current result: **244 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds straight-profile creation and its live evidence. Server 2.4.0 adds a 23-tool registry and pure drawing-plan coverage for one to three views, stated/estimated/missing evidence, required stated X/Y/Z axes, shared-axis conflicts, proposed-model bounds, plate/profile routing, null-blocked dimensions, unsupported features, reused plate/profile geometry safety, non-mutation, strict MCP schema, and explicit-tool harness handoff. Live 2.4.0 validation remains pending a Fusion restart. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
+Current result: **244 tests passed**. The calibrated reference-canvas coverage includes path, format and size validation, aspect-preserving calibration, principal-plane selection through Fusion wrappers and plane normals, center offsets, opacity, both flips, name conflicts, recompute rollback, checkpoint-targeted deletion, path redaction, strict MCP schema, version reporting, and bounded canvas context serialization. Orthographic-set coverage adds strict 2–3 view normalization, XY/XZ/YZ model-axis mapping, tolerance-boundary and mismatch checks, preparation before mutation, two- and three-view creation, one-transaction commit, partial-failure cleanup, basename-only results and audits, one whole-set checkpoint, and all-target-prevalidated Undo. Parametric-plate coverage adds strict nested request validation, Part and Hybrid design container routing, parameter-driven profile/hole/edge geometry, failure rollback, exact root-part Undo, and the explicit live harness. Server 2.3.0 adds straight-profile creation and its live evidence. Server 2.4.0 adds a 23-tool registry and pure drawing-plan coverage for one to three views, stated/estimated/missing evidence, required stated X/Y/Z axes, shared-axis conflicts, proposed-model bounds, plate/profile routing, null-blocked dimensions, unsupported features, reused plate/profile geometry safety, non-mutation, strict MCP schema, and explicit-tool harness handoff. Live server 2.4.0 validation passed all 16 checks on Fusion 2704.1.53. The skill validator could not start because the local Python environment does not include optional `PyYAML`; frontmatter and the reference link were checked manually without adding a runtime dependency.
 
 Run:
 
@@ -173,6 +173,16 @@ After installing the signed-coordinate seeding fix and fully restarting Fusion 2
 7. Call `undo_last_execution` once and confirm the exact profile body, sketch, feature, and 13 generated parameters were removed while both reference canvases remained. Final counts were one component, zero bodies, zero sketches, zero features, zero user parameters, and two canvases.
 
 The generated `docs/live-profile-validation-result.json` report removes bearer tokens, absolute local paths, and base64 image payloads and is intentionally ignored by Git.
+
+## Live server 2.4.0 drawing-plan evidence
+
+After restarting Fusion 2704.1.53 with the installed server 2.4.0 add-in, the authenticated catalog exposed all 23 tools including `validate_drawing_modeling_plan`. Against a new unsaved blank design, the updated explicit-tool harness completed 16 of 16 checks:
+
+1. Validate an XY `100 × 60 mm` view and an XZ `100 × 8 mm` view as stated dimensions. The preflight reported X/Y/Z axes of `100 × 60 × 8 mm`, matched the shared X dimension with a `0.0 mm` difference against the `0.01 mm` tolerance, performed no mutation, and returned `create_parametric_profile_extrusion` with normalized arguments.
+2. Use those returned arguments unchanged to create the six-vertex `LProfile`. Fusion recomputed one solid with exact size `100 × 60 × 8 mm`, profile area `4200 mm²`, and volume `33.6 cm³`.
+3. Capture 768 × 768 top, front, and isometric viewport images, then verify non-empty exports: an 11,348-byte STEP file and a 1,084-byte STL file.
+4. Submit a self-intersecting bow-tie outline and confirm the structured `PROFILE_SELF_INTERSECTION` refusal occurred without a design delta.
+5. Call `undo_last_execution` once and confirm the generated profile, sketch, feature, and 13 parameters were removed while the two calibrated reference canvases remained. Final counts were one component, zero bodies, zero sketches, zero features, zero user parameters, and two canvases.
 
 ## Required live procedure
 
