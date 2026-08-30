@@ -126,6 +126,16 @@ class FakeSketchPoints(FakeCollection):
 
 
 class FakeGeometricConstraints(FakeCollection):
+    def addHorizontal(self, line):
+        constraint = ("horizontal", line)
+        self._items.append(constraint)
+        return constraint
+
+    def addVertical(self, line):
+        constraint = ("vertical", line)
+        self._items.append(constraint)
+        return constraint
+
     def addVerticalPoints(self, point_one, point_two):
         constraint = ("vertical-points", point_one, point_two)
         self._items.append(constraint)

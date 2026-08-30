@@ -202,6 +202,14 @@ class FusionPlateBuilder:
             )
             if lines is None or safe_value(lines, "count", 0) != 4:
                 raise RuntimeError("Fusion did not create four profile lines.")
+            rectangle_constraints = (
+                sketch.geometricConstraints.addHorizontal(lines.item(0)),
+                sketch.geometricConstraints.addVertical(lines.item(1)),
+                sketch.geometricConstraints.addHorizontal(lines.item(2)),
+                sketch.geometricConstraints.addVertical(lines.item(3)),
+            )
+            if any(constraint is None for constraint in rectangle_constraints):
+                raise RuntimeError("Fusion did not constrain the rectangular profile.")
             endpoints = [
                 point
                 for line in lines
